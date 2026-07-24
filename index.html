@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proof by Rectangle Area</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']], packages: {'[+]': ['color']} },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js" id="MathJax-script" async></script>
+
+<style>
+  :root{
+    --a: #4A63E7;
+    --b: #E8A33D;
+    --c: #5FA88F;
+    --cross: #D6604D;
+    --paper: #FAF9F5;
+    --panel: #FFFFFF;
+    --ink: #20242B;
+    --ink-soft: #5C6470;
+    --line: rgba(32,36,43,0.10);
+    --grid: rgba(32,36,43,0.08);
+    --radius: 14px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0; height:100%;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--paper);
+    background-size: 28px 28px, 28px 28px, auto;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .app{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink:0;
+  }
+
+  header.top .brand{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+  }
+  header.top .brand span{ color: var(--cross); }
+
+  header.top .counter{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+
+  main#stage{
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .slide{
+    display:none;
+    height:100%;
+    width:100%;
+    padding: 28px 40px;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 28px;
+    align-items: stretch;
+  }
+  .slide.active{ display:grid; }
+
+  .diagram-panel{
+    background: var(--panel);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    min-height: 0;
+  }
+  .diagram-panel svg{
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    padding: 18px;
+  }
+
+  .replay-btn{
+    position:absolute;
+    top:14px; right:14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition: color .15s, border-color .15s;
+  }
+  .replay-btn:hover{ color: var(--ink); border-color: var(--ink-soft); }
+
+  .text-panel{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding: 8px 12px;
+    min-height:0;
+    overflow-y:auto;
+  }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--cross);
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    opacity:0;
+  }
+  .slide.active .eyebrow{ animation: riseIn .6s cubic-bezier(.22,1,.36,1) forwards; animation-delay:.05s; }
+
+  h1.title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(1.5rem, 2.6vw, 2.3rem);
+    line-height: 1.15;
+    margin: 0 0 18px 0;
+    opacity:0;
+  }
+  .slide.active h1.title{ animation: riseIn .65s cubic-bezier(.22,1,.36,1) forwards; animation-delay:.15s; }
+
+  .formula-box{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cross);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 1.15rem;
+    opacity:0;
+    overflow-x:auto;
+    box-shadow: 0 0 0 0 rgba(214,96,77,0);
+  }
+  .slide.active .formula-box{
+    animation:
+      riseIn .65s cubic-bezier(.22,1,.36,1) forwards,
+      settleGlow 1s ease-out forwards;
+    animation-delay: .3s, .85s;
+  }
+  @keyframes settleGlow{
+    0%{ box-shadow: 0 0 0 0 rgba(214,96,77,.35); }
+    100%{ box-shadow: 0 0 0 14px rgba(214,96,77,0); }
+  }
+
+  p.desc{
+    font-size: 0.98rem;
+    line-height: 1.55;
+    color: var(--ink);
+    opacity:0;
+    max-width: 46ch;
+  }
+  .slide.active p.desc{ animation: riseIn .65s cubic-bezier(.22,1,.36,1) forwards; animation-delay:.45s; }
+
+  ol.steps{
+    margin: 0 0 16px 0;
+    padding-left: 1.3em;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  ol.steps li{
+    margin-bottom: 5px;
+    opacity: 0;
+    animation: riseIn .6s cubic-bezier(.22,1,.36,1) forwards;
+  }
+  .slide.active ol.steps li:nth-child(1){ animation-delay: .55s; }
+  .slide.active ol.steps li:nth-child(2){ animation-delay: .68s; }
+  .slide.active ol.steps li:nth-child(3){ animation-delay: .81s; }
+  .slide.active ol.steps li:nth-child(4){ animation-delay: .94s; }
+  .slide.active ol.steps li:nth-child(5){ animation-delay: 1.07s; }
+
+  .note{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+    margin-top: 4px;
+    opacity: 0;
+  }
+  .slide.active .note{ animation: riseIn .65s cubic-bezier(.22,1,.36,1) forwards; animation-delay: 1.2s; }
+
+  .legend{
+    display:flex;
+    gap: 16px;
+    margin-top: 20px;
+    flex-wrap:wrap;
+    opacity:0;
+  }
+  .slide.active .legend{ animation: riseIn .65s cubic-bezier(.22,1,.36,1) forwards; animation-delay:.6s; }
+  .legend .item{
+    display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+  .legend .swatch{
+    width:12px; height:12px; border-radius:3px; display:inline-block;
+  }
+
+  @keyframes riseIn{
+    from{ opacity:0; transform: translateY(10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  footer.bottom{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 16px 32px 22px;
+    border-top: 1px solid var(--line);
+    flex-shrink:0;
+  }
+
+  .dots{ display:flex; gap:7px; }
+  .dots .dot{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--line);
+    transition: background .25s;
+  }
+  .dots .dot.done{ background: var(--a); }
+  .dots .dot.current{ background: var(--cross); }
+
+  #nextBtn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px 26px;
+    border-radius: 999px;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    transition: transform .15s, background .15s;
+  }
+  #nextBtn:hover{ background:#000; transform: translateY(-1px); }
+  #nextBtn:active{ transform: translateY(0); }
+  #nextBtn svg{ width:16px; height:16px; }
+
+  #autoplayBtn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 12px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    transition: transform .15s, border-color .15s;
+  }
+  #autoplayBtn:hover{ border-color: var(--ink-soft); transform: translateY(-1px); }
+  #autoplayBtn:active{ transform: translateY(0); }
+  #autoplayBtn svg{ width:15px; height:15px; }
+  #autoplayBtn.on{ border-color: var(--cross); color: var(--cross); }
+
+  .hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    opacity:0.75;
+  }
+
+  /* ---- generic SVG animation helpers ---- */
+  .fx-fade{ opacity:0; animation: fadeIn .7s cubic-bezier(.22,1,.36,1) forwards; }
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(3px); } to{ opacity:1; transform: translateY(0); } }
+
+  .fx-draw{ opacity:1; }
+  .fx-draw path, .fx-draw line, .fx-draw rect, .fx-draw polygon{
+    stroke-dasharray: var(--len, 1000);
+    stroke-dashoffset: var(--len, 1000);
+    animation: drawLine 1.05s cubic-bezier(.65,0,.35,1) forwards;
+  }
+  @keyframes drawLine{ to{ stroke-dashoffset:0; } }
+
+  .fx-grow{ opacity:0; transform-box: fill-box; transform-origin: center; transform: scale(0.55); animation: growIn .7s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes growIn{ 60%{ opacity:1; } to{ opacity:1; transform: scale(1); } }
+
+  .fx-slide{ opacity:0; animation: slideIn 1s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes slideIn{
+    0%{ opacity:0; transform: translate(var(--fx,0px), var(--fy,0px)) scale(.92); }
+    55%{ opacity:1; }
+    100%{ opacity:1; transform: translate(0,0) scale(1); }
+  }
+
+  text{ font-family:'IBM Plex Mono', monospace; user-select:none; }
+
+  @media (max-width: 860px){
+    .slide.active{ display:flex; flex-direction:column; overflow-y:auto; }
+    .diagram-panel{ min-height: 46vh; }
+    .text-panel{ padding-top: 18px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide.active *{ animation-duration: .01ms !important; animation-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="top">
+    <div class="brand">Proof by Rectangle Area <span>&#9633;</span></div>
+    <div class="counter" id="counterLabel">01 / 30</div>
+  </header>
+
+  <main id="stage">
+
+    <!-- SLIDE 1 : (a+b)^2 -->
+    <section class="slide active" data-i="0">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(0)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1440">
+            <rect x="60" y="40" width="360" height="360" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-draw" style="--len:400; animation-delay:.5s;">
+            <line x1="280" y1="40" x2="280" y2="400" stroke="#20242B" stroke-width="2"/>
+            <line x1="60" y1="260" x2="420" y2="260" stroke="#20242B" stroke-width="2"/>
+          </g>
+          <g>
+            <rect class="fx-grow" style="animation-delay:1.0s" x="63" y="43" width="214" height="214" fill="#4A63E7" fill-opacity="0.75"/>
+            <rect class="fx-grow" style="animation-delay:1.15s" x="283" y="43" width="134" height="214" fill="#D6604D" fill-opacity="0.65"/>
+            <rect class="fx-grow" style="animation-delay:1.3s" x="63" y="263" width="214" height="134" fill="#D6604D" fill-opacity="0.65"/>
+            <rect class="fx-grow" style="animation-delay:1.45s" x="283" y="263" width="134" height="134" fill="#E8A33D" fill-opacity="0.8"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.75s">
+            <text x="170" y="155" font-size="26" fill="#FAF9F5" text-anchor="middle">a&#178;</text>
+            <text x="350" y="155" font-size="22" fill="#FAF9F5" text-anchor="middle">ab</text>
+            <text x="170" y="335" font-size="22" fill="#FAF9F5" text-anchor="middle">ab</text>
+            <text x="350" y="335" font-size="26" fill="#FAF9F5" text-anchor="middle">b&#178;</text>
+
+            <text x="170" y="422" font-size="16" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="350" y="422" font-size="16" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="38" y="155" font-size="16" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="38" y="335" font-size="16" fill="#5C6470" text-anchor="middle">b</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">01 / 30 &mdash; Binomial square</div>
+        <h1 class="title">(a+b)&sup2; by area</h1>
+        <div class="formula-box">
+          $$(a+b)^2 = \color{#4A63E7}{a^2} + \color{#D6604D}{2ab} + \color{#E8A33D}{b^2}$$
+        </div>
+        <p class="desc">Mark off a length <em>a</em> and a length <em>b</em> along each side of a square of side (a+b), and draw the two lines through those marks. Four rectangles appear on their own: one a&times;a square, one b&times;b square, and two matching a&times;b rectangles &mdash; the cross term, counted twice.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>a&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>2ab</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>b&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 : a^2 - b^2 -->
+    <section class="slide" data-i="1">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(1)">&#8635; replay</button>
+        <svg viewBox="0 0 560 480">
+          <!-- original a x a square with corner removed (L shape) -->
+          <g class="fx-fade" style="animation-delay:.1s">
+            <path d="M60,40 L180,40 L180,200 L340,200 L340,320 L60,320 Z"
+                  fill="#4A63E7" fill-opacity="0.7" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <!-- ghost of removed b x b corner -->
+          <g class="fx-fade" style="animation-delay:.4s">
+            <rect x="180" y="40" width="160" height="160" fill="none" stroke="#5C6470" stroke-width="2" stroke-dasharray="6 5"/>
+            <text x="260" y="128" font-size="18" fill="#5C6470" text-anchor="middle">b&times;b removed</text>
+          </g>
+          <!-- cut line separating piece A (bottom strip) & piece B (top-left block) -->
+          <g class="fx-draw" style="--len:280; animation-delay:1.0s">
+            <line x1="60" y1="200" x2="340" y2="200" stroke="#D6604D" stroke-width="2.5" stroke-dasharray="9 6"/>
+          </g>
+          <text class="fx-fade" style="animation-delay:1.3s" x="360" y="205" font-size="14" fill="#D6604D">cut</text>
+
+          <!-- labels for piece A and piece B before moving -->
+          <g class="fx-fade" style="animation-delay:1.4s">
+            <text x="200" y="265" font-size="16" fill="#FAF9F5" text-anchor="middle">piece A &mdash; a &times; (a&minus;b)</text>
+            <text x="120" y="125" font-size="15" fill="#FAF9F5" text-anchor="middle">piece B</text>
+          </g>
+
+          <!-- arrow showing piece B will rotate & slide -->
+          <g class="fx-fade" style="animation-delay:1.7s">
+            <path d="M345,120 C 420,90 470,150 470,195" fill="none" stroke="#D6604D" stroke-width="2" marker-end="url(#arrow2)"/>
+          </g>
+          <defs>
+            <marker id="arrow2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#D6604D"/>
+            </marker>
+          </defs>
+
+          <!-- piece B relocated: rotated 90 deg, attached to the right of piece A -->
+          <g style="animation-delay:2.2s" class="fx-slide" style="--fx:120px; --fy:-60px; animation-delay:2.2s;">
+            <rect x="340" y="200" width="160" height="120" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="3"/>
+            <text x="420" y="265" font-size="15" fill="#20242B" text-anchor="middle">piece B, rotated</text>
+          </g>
+
+          <!-- final rectangle outline -->
+          <g class="fx-draw" style="--len:640; animation-delay:2.9s">
+            <rect x="60" y="200" width="440" height="120" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:3.3s">
+            <text x="280" y="345" font-size="16" fill="#5C6470" text-anchor="middle">a + b</text>
+            <text x="40" y="260" font-size="16" fill="#5C6470" text-anchor="middle" transform="rotate(-90 40 260)">a &minus; b</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">02 / 30 &mdash; Difference of squares</div>
+        <h1 class="title">a&sup2; &minus; b&sup2; by dissection</h1>
+        <div class="formula-box">
+          $$\color{#4A63E7}{a^2}-\color{#E8A33D}{b^2}=(a+b)(a-b)$$
+        </div>
+        <p class="desc">Cut a b&times;b square out of one corner of an a&times;a square. What remains is an L-shaped strip of area a&sup2;&minus;b&sup2;. One straight cut splits the L into two rectangles; sliding one of them into place &mdash; no stretching, no overlap &mdash; assembles a plain rectangle of sides (a+b) and (a&minus;b).</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>a&sup2; strip</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>relocated piece</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 : (a+b+c)^2 -->
+    <section class="slide" data-i="2">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(2)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <defs>
+            <pattern id="stripeAB" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <rect width="5" height="10" fill="#4A63E7"/><rect x="5" width="5" height="10" fill="#E8A33D"/>
+            </pattern>
+            <pattern id="stripeAC" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <rect width="5" height="10" fill="#4A63E7"/><rect x="5" width="5" height="10" fill="#5FA88F"/>
+            </pattern>
+            <pattern id="stripeBC" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <rect width="5" height="10" fill="#E8A33D"/><rect x="5" width="5" height="10" fill="#5FA88F"/>
+            </pattern>
+          </defs>
+
+          <g class="fx-draw" style="--len:1360">
+            <rect x="70" y="60" width="340" height="340" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-draw" style="--len:680; animation-delay:.5s">
+            <line x1="210" y1="60" x2="210" y2="400" stroke="#20242B" stroke-width="1.5"/>
+            <line x1="320" y1="60" x2="320" y2="400" stroke="#20242B" stroke-width="1.5"/>
+            <line x1="70" y1="200" x2="410" y2="200" stroke="#20242B" stroke-width="1.5"/>
+            <line x1="70" y1="310" x2="410" y2="310" stroke="#20242B" stroke-width="1.5"/>
+          </g>
+
+          <!-- 9 cells: rows a,b,c (top to bottom) x cols a,b,c -->
+          <g style="animation-delay:1s">
+            <rect class="fx-grow" style="animation-delay:1.0s" x="73" y="63" width="134" height="134" fill="#4A63E7" fill-opacity="0.8"/>
+            <rect class="fx-grow" style="animation-delay:1.1s" x="213" y="63" width="104" height="134" fill="url(#stripeAB)" fill-opacity="0.9"/>
+            <rect class="fx-grow" style="animation-delay:1.2s" x="323" y="63" width="84" height="134" fill="url(#stripeAC)" fill-opacity="0.9"/>
+
+            <rect class="fx-grow" style="animation-delay:1.3s" x="73" y="203" width="134" height="104" fill="url(#stripeAB)" fill-opacity="0.9"/>
+            <rect class="fx-grow" style="animation-delay:1.4s" x="213" y="203" width="104" height="104" fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:1.5s" x="323" y="203" width="84" height="104" fill="url(#stripeBC)" fill-opacity="0.9"/>
+
+            <rect class="fx-grow" style="animation-delay:1.6s" x="73" y="313" width="134" height="84" fill="url(#stripeAC)" fill-opacity="0.9"/>
+            <rect class="fx-grow" style="animation-delay:1.7s" x="213" y="313" width="104" height="84" fill="url(#stripeBC)" fill-opacity="0.9"/>
+            <rect class="fx-grow" style="animation-delay:1.8s" x="323" y="313" width="84" height="84" fill="#5FA88F" fill-opacity="0.9"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.2s">
+            <text x="140" y="135" font-size="20" fill="#FAF9F5" text-anchor="middle">a&#178;</text>
+            <text x="265" y="135" font-size="16" fill="#20242B" text-anchor="middle">ab</text>
+            <text x="365" y="135" font-size="15" fill="#20242B" text-anchor="middle">ac</text>
+            <text x="140" y="260" font-size="16" fill="#20242B" text-anchor="middle">ab</text>
+            <text x="265" y="260" font-size="18" fill="#FAF9F5" text-anchor="middle">b&#178;</text>
+            <text x="365" y="260" font-size="15" fill="#20242B" text-anchor="middle">bc</text>
+            <text x="140" y="360" font-size="15" fill="#20242B" text-anchor="middle">ac</text>
+            <text x="265" y="360" font-size="15" fill="#20242B" text-anchor="middle">bc</text>
+            <text x="365" y="360" font-size="16" fill="#FAF9F5" text-anchor="middle">c&#178;</text>
+
+            <text x="140" y="422" font-size="14" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="265" y="422" font-size="14" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="365" y="422" font-size="14" fill="#5C6470" text-anchor="middle">c</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">03 / 30 &mdash; Trinomial square</div>
+        <h1 class="title">(a+b+c)&sup2; by a 3&times;3 grid</h1>
+        <div class="formula-box">
+          $$(a+b+c)^2=\color{#4A63E7}{a^2}+\color{#E8A33D}{b^2}+\color{#5FA88F}{c^2}+\color{#D6604D}{2ab+2ac+2bc}$$
+        </div>
+        <p class="desc">Divide each side of a square of side (a+b+c) into three marked lengths and draw the grid. Nine rectangles appear: three squares on the diagonal (a&sup2;, b&sup2;, c&sup2;), and three pairs of equal cross-term rectangles, each pair drawn with matching stripes.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>a&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>b&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>c&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>cross terms</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 : 1+2+...+n -->
+    <section class="slide" data-i="3">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(3)">&#8635; replay</button>
+        <svg viewBox="0 0 400 440">
+          <defs>
+            <pattern id="unitgrid4" width="40" height="40" patternUnits="userSpaceOnUse">
+              <rect width="40" height="40" fill="none" stroke="rgba(32,36,43,0.25)" stroke-width="1"/>
+            </pattern>
+          </defs>
+
+          <!-- ascending staircase, columns 1..6, bottom aligned y=380 -->
+          <g>
+            <rect class="fx-grow" style="animation-delay:.2s"  x="60"  y="340" width="40" height="40"  fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.35s" x="100" y="300" width="40" height="80"  fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.5s"  x="140" y="260" width="40" height="120" fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.65s" x="180" y="220" width="40" height="160" fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.8s"  x="220" y="180" width="40" height="200" fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.95s" x="260" y="140" width="40" height="240" fill="#4A63E7" fill-opacity="0.85"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.15s">
+            <text x="80"  y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">1</text>
+            <text x="120" y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">2</text>
+            <text x="160" y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">3</text>
+            <text x="200" y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">4</text>
+            <text x="240" y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">5</text>
+            <text x="280" y="365" font-size="15" fill="#FAF9F5" text-anchor="middle">6</text>
+          </g>
+
+          <!-- complementary rotated staircase filling the gaps, amber -->
+          <g>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:1.5s"  x="60"  y="100" width="40" height="240" fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:1.6s"  x="100" y="100" width="40" height="200" fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:1.7s"  x="140" y="100" width="40" height="160" fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:1.8s"  x="180" y="100" width="40" height="120" fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:1.9s"  x="220" y="100" width="40" height="80"  fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-slide" style="--fy:-30px; animation-delay:2.0s"  x="260" y="100" width="40" height="40"  fill="#E8A33D" fill-opacity="0.85"/>
+          </g>
+
+          <rect x="60" y="100" width="240" height="280" fill="url(#unitgrid4)" class="fx-fade" style="animation-delay:2.3s"/>
+
+          <g class="fx-draw" style="--len:1040; animation-delay:2.3s">
+            <rect x="60" y="100" width="240" height="280" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.7s">
+            <text x="180" y="405" font-size="16" fill="#5C6470" text-anchor="middle">n = 6</text>
+            <text x="330" y="240" font-size="16" fill="#5C6470" text-anchor="middle">n+1 = 7</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">04 / 30 &mdash; Sum of the first n integers</div>
+        <h1 class="title">1+2+&hellip;+n by a staircase</h1>
+        <div class="formula-box">
+          $$1+2+\cdots+n=\dfrac{n(n+1)}{2}$$
+        </div>
+        <p class="desc">Stack bars of height 1,2,3,&hellip;,n (shown here for n=6) into a staircase &mdash; its area is exactly the sum you want. Fit a second copy of the same staircase, upside down, into the gaps, and together they tile a plain n&times;(n+1) rectangle. So twice the sum is n(n+1).</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>original staircase</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>rotated copy</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 : 1+3+5+...+(2n-1) -->
+    <section class="slide" data-i="4">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(4)">&#8635; replay</button>
+        <svg viewBox="0 0 420 440">
+          <defs>
+            <pattern id="unitgrid5" width="48" height="48" patternUnits="userSpaceOnUse">
+              <rect width="48" height="48" fill="none" stroke="rgba(32,36,43,0.25)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <!-- top-left anchor at (90,50); k-th square occupies 90..90+48k, 50..50+48k -->
+
+          <rect class="fx-grow" style="animation-delay:.2s" x="90" y="50" width="48" height="48" fill="#4A63E7" fill-opacity="0.85"/>
+
+          <!-- gnomon k=2 (adds to 96x96), color amber -->
+          <g class="fx-fade" style="animation-delay:1.0s">
+            <path d="M138,50 h48 v48 h-48 v48 h-48 v-48 h48 Z" fill="#E8A33D" fill-opacity="0.85"/>
+          </g>
+
+          <!-- gnomon k=3 (to 144x144), sage -->
+          <g class="fx-fade" style="animation-delay:1.8s">
+            <path d="M186,50 h48 v96 h-48 v48 h-96 v-48 h96 Z" fill="#5FA88F" fill-opacity="0.85"/>
+          </g>
+
+          <!-- gnomon k=4 (to 192x192), rose -->
+          <g class="fx-fade" style="animation-delay:2.6s">
+            <path d="M234,50 h48 v144 h-48 v48 h-144 v-48 h144 Z" fill="#D6604D" fill-opacity="0.8"/>
+          </g>
+
+          <!-- gnomon k=5 (to 240x240), indigo again -->
+          <g class="fx-fade" style="animation-delay:3.4s">
+            <path d="M282,50 h48 v192 h-48 v48 h-192 v-48 h192 Z" fill="#4A63E7" fill-opacity="0.55"/>
+          </g>
+
+          <rect x="90" y="50" width="240" height="240" fill="url(#unitgrid5)"/>
+
+          <g class="fx-draw" style="--len:960; animation-delay:3.9s">
+            <rect x="90" y="50" width="240" height="240" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:.6s"><text x="114" y="80" font-size="14" fill="#FAF9F5" text-anchor="middle">1</text></g>
+          <g class="fx-fade" style="animation-delay:1.4s"><text x="162" y="80" font-size="14" fill="#20242B" text-anchor="middle">3</text></g>
+          <g class="fx-fade" style="animation-delay:2.2s"><text x="210" y="80" font-size="14" fill="#20242B" text-anchor="middle">5</text></g>
+          <g class="fx-fade" style="animation-delay:3.0s"><text x="258" y="80" font-size="14" fill="#20242B" text-anchor="middle">7</text></g>
+          <g class="fx-fade" style="animation-delay:3.8s"><text x="306" y="80" font-size="14" fill="#20242B" text-anchor="middle">9</text></g>
+
+          <g class="fx-fade" style="animation-delay:4.3s">
+            <text x="210" y="410" font-size="16" fill="#5C6470" text-anchor="middle">1+3+5+7+9 = 5&sup2; = 25</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">05 / 30 &mdash; Sum of the first n odd numbers</div>
+        <h1 class="title">1+3+5+&hellip;+(2n&minus;1) by nested L's</h1>
+        <div class="formula-box">
+          $$1+3+5+\cdots+(2n-1)=n^2$$
+        </div>
+        <p class="desc">Each odd number is precisely the L-shaped border &mdash; a "gnomon" &mdash; needed to grow a k&times;k square into a (k+1)&times;(k+1) square: (k+1)&sup2;&minus;k&sup2;=2k+1. Nesting five such gnomons around a single unit square builds a 5&times;5 square, one odd number at a time.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>3</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>5</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>7</span>
+          <span class="item"><span class="swatch" style="background:#4A63E7; opacity:.6"></span>9</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 : Area of a triangle -->
+    <section class="slide" data-i="5">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(5)">&#8635; replay</button>
+        <svg viewBox="0 0 560 460">
+          <!-- height guide -->
+          <g class="fx-fade" style="animation-delay:.1s">
+            <line x1="220" y1="180" x2="220" y2="380" stroke="#5C6470" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="235" y="280" font-size="14" fill="#5C6470">h</text>
+          </g>
+
+          <!-- original triangle A(120,380) B(360,380) C(220,180) -->
+          <polygon class="fx-grow" style="animation-delay:.2s" points="120,380 360,380 220,180" fill="#4A63E7" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          <text class="fx-fade" style="animation-delay:.6s" x="230" y="330" font-size="16" fill="#FAF9F5" text-anchor="middle">T</text>
+
+          <!-- rotated copy: C(220,180) B(360,380) A'(460,180) -->
+          <polygon class="fx-fade" style="animation-delay:1.1s" points="220,180 360,380 460,180" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          <text class="fx-fade" style="animation-delay:1.4s" x="340" y="255" font-size="16" fill="#20242B" text-anchor="middle">T (rotated 180&deg;)</text>
+
+          <!-- parallelogram outline -->
+          <g class="fx-draw" style="--len:1200; animation-delay:1.8s">
+            <polygon points="120,380 360,380 460,180 220,180" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <!-- cut line at x=220 from C down to Q(220,380) -->
+          <g class="fx-draw" style="--len:200; animation-delay:2.4s">
+            <line x1="220" y1="180" x2="220" y2="380" stroke="#D6604D" stroke-width="2.5" stroke-dasharray="8 5"/>
+          </g>
+
+          <!-- sliver triangle A,Q,C sliding to the right end to complete rectangle -->
+          <polygon class="fx-slide" style="--fx:-240px; animation-delay:2.9s" points="360,380 460,380 460,180" fill="#D6604D" fill-opacity="0.55" stroke="#20242B" stroke-width="2"/>
+
+          <!-- final rectangle -->
+          <g class="fx-draw" style="--len:1200; animation-delay:3.3s">
+            <rect x="220" y="180" width="240" height="200" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:3.7s">
+            <text x="340" y="410" font-size="16" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="480" y="285" font-size="16" fill="#5C6470" text-anchor="middle">h</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">06 / 30 &mdash; Area of a triangle</div>
+        <h1 class="title">&frac12;&middot;base&middot;height, one rectangle away</h1>
+        <div class="formula-box">
+          $$\text{Area}(T)=\dfrac12\,b\,h$$
+        </div>
+        <p class="desc">Rotate a copy of the triangle 180&deg; about the midpoint of one side. The two copies tile a parallelogram with the same base b and height h. Cut a triangular sliver from one end of the parallelogram and slide it to the other end &mdash; it becomes a plain b&times;h rectangle, exactly twice the original triangle.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>triangle T</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>rotated copy</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>relocated sliver</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 : Pythagorean theorem -->
+    <section class="slide" data-i="6">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(6)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <!-- big square P0(80,60) P1(395,60) P2(395,375) P3(80,375) -->
+          <g class="fx-draw" style="--len:1260">
+            <rect x="80" y="60" width="315" height="315" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <!-- division points -->
+          <g class="fx-fade" style="animation-delay:.6s">
+            <circle cx="260" cy="60" r="4" fill="#20242B"/>
+            <circle cx="395" cy="240" r="4" fill="#20242B"/>
+            <circle cx="215" cy="375" r="4" fill="#20242B"/>
+            <circle cx="80" cy="195" r="4" fill="#20242B"/>
+          </g>
+
+          <!-- four corner triangles -->
+          <polygon class="fx-grow" style="animation-delay:1.0s" points="395,60 260,60 395,240" fill="#D6604D" fill-opacity="0.75" stroke="#20242B" stroke-width="2"/>
+          <polygon class="fx-grow" style="animation-delay:1.15s" points="395,375 395,240 215,375" fill="#D6604D" fill-opacity="0.75" stroke="#20242B" stroke-width="2"/>
+          <polygon class="fx-grow" style="animation-delay:1.3s" points="80,375 215,375 80,195" fill="#D6604D" fill-opacity="0.75" stroke="#20242B" stroke-width="2"/>
+          <polygon class="fx-grow" style="animation-delay:1.45s" points="80,60 80,195 260,60" fill="#D6604D" fill-opacity="0.75" stroke="#20242B" stroke-width="2"/>
+
+          <!-- inner tilted square -->
+          <g class="fx-draw" style="--len:900; animation-delay:1.9s">
+            <polygon points="260,60 395,240 215,375 80,195" fill="#5FA88F" fill-opacity="0.55" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.4s">
+            <text x="237" y="255" font-size="22" fill="#20242B" text-anchor="middle">c&#178;</text>
+            <text x="350" y="115" font-size="13" fill="#FAF9F5" text-anchor="middle">&frac12;ab</text>
+            <text x="350" y="330" font-size="13" fill="#FAF9F5" text-anchor="middle">&frac12;ab</text>
+            <text x="140" y="330" font-size="13" fill="#FAF9F5" text-anchor="middle">&frac12;ab</text>
+            <text x="140" y="115" font-size="13" fill="#FAF9F5" text-anchor="middle">&frac12;ab</text>
+
+            <text x="170" y="45" font-size="14" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="330" y="45" font-size="14" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="65" y="135" font-size="14" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="65" y="290" font-size="14" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="345" y="140" font-size="13" fill="#20242B" text-anchor="middle" transform="rotate(53 345 140)">c</text>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.7s">
+            <text x="240" y="440" font-size="13" fill="#5C6470" text-anchor="middle">shown for a right triangle with legs 3, 4 and hypotenuse 5 &mdash; scaled up: a=3&middot;45, b=4&middot;45, c=5&middot;45</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">07 / 30 &mdash; Pythagorean theorem</div>
+        <h1 class="title">a&sup2;+b&sup2;=c&sup2;, built from four triangles</h1>
+        <div class="formula-box">
+          $$(a+b)^2 = 4\left(\tfrac12 ab\right) + c^2 \;\Longrightarrow\; \color{#4A63E7}{a^2}+\color{#E8A33D}{b^2}=\color{#5FA88F}{c^2}$$
+        </div>
+        <p class="desc">Divide each side of a square of side (a+b) in the ratio a:b and connect the marked points around the square. This produces four congruent right triangles &mdash; legs a, b, area &frac12;ab each &mdash; sitting around a tilted inner square of side c, whose sides are exactly the hypotenuses of those triangles.</p>
+        <ol class="steps">
+          <li><strong>Outer square, direct.</strong> The big square has side (a+b), so its area is $(a+b)^2$.</li>
+          <li><strong>Outer square, in pieces.</strong> The same square is also 4 right triangles of area $\tfrac12 ab$ each, plus the tilted inner square of area $c^2$: $\;(a+b)^2 = 4\cdot\tfrac12 ab + c^2 = 2ab + c^2$.</li>
+          <li><strong>Expand the left side.</strong> $a^2+2ab+b^2 = 2ab+c^2$.</li>
+          <li><strong>Cancel $2ab$ from both sides.</strong> $a^2+b^2=c^2$.</li>
+          <li><strong>Check it.</strong> For legs 3, 4: $3^2+4^2=9+16=25=5^2$. &#10003;</li>
+        </ol>
+        <p class="note">The inner quadrilateral is a genuine square (not just a rhombus) because each of its angles is the third angle of a right triangle whose other two angles sum to 90&deg; &mdash; so each inner angle is exactly 90&deg; too, and all four sides equal c by construction. This rearrangement is one of the oldest known proofs of the theorem, traditionally associated with the Indian mathematician Bh&#257;skara II.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>4 &times; &frac12;ab</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>c&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 : x^2 + 1/x^2 >= 2 -->
+    <section class="slide" data-i="7">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(7)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="60" y="40" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-draw" style="--len:520; animation-delay:.5s">
+            <line x1="260" y1="40" x2="260" y2="340" stroke="#20242B" stroke-width="2"/>
+            <line x1="60" y1="240" x2="360" y2="240" stroke="#20242B" stroke-width="2"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:1.0s" x="63" y="43" width="194" height="194" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.15s" x="263" y="43" width="94" height="194" fill="#D6604D" fill-opacity="0.55"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="63" y="243" width="194" height="94" fill="#D6604D" fill-opacity="0.55"/>
+          <rect class="fx-grow" style="animation-delay:1.45s" x="263" y="243" width="94" height="94" fill="#E8A33D" fill-opacity="0.85"/>
+
+          <g class="fx-fade" style="animation-delay:1.8s">
+            <text x="160" y="150" font-size="24" fill="#FAF9F5" text-anchor="middle">(x&minus;1/x)&sup2;</text>
+            <text x="310" y="150" font-size="15" fill="#20242B" text-anchor="middle">b(a&minus;b)</text>
+            <text x="160" y="300" font-size="15" fill="#20242B" text-anchor="middle">b(a&minus;b)</text>
+            <text x="310" y="300" font-size="15" fill="#20242B" text-anchor="middle">b&sup2;</text>
+
+            <text x="160" y="360" font-size="14" fill="#5C6470" text-anchor="middle">a&minus;b  =  x &minus; 1/x</text>
+            <text x="310" y="360" font-size="14" fill="#5C6470" text-anchor="middle">b = 1/x</text>
+            <text x="35" y="150" font-size="14" fill="#5C6470" text-anchor="middle">a&minus;b</text>
+            <text x="35" y="300" font-size="14" fill="#5C6470" text-anchor="middle">b</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.3s">
+            <rect x="60" y="400" width="90" height="14" fill="none" stroke="#4A63E7" stroke-width="2"/>
+            <text x="105" y="410" font-size="10" fill="#4A63E7" text-anchor="middle" dy="1">this square's area is a real, physical area &mdash; it can never be negative</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">08 / 30 &mdash; An inequality from a square</div>
+        <h1 class="title">x&sup2; + 1/x&sup2; &ge; 2, because area &ge; 0</h1>
+        <div class="formula-box">
+          $$\color{#4A63E7}{(a-b)^2}\;\ge\;0 \quad\Longrightarrow\quad a^2+b^2\ge 2ab$$
+        </div>
+        <p class="desc">Take any square of side <em>a</em> and mark off a length <em>b</em> along two adjacent sides &mdash; exactly the same picture as $(a+b)^2$, but now reading the pieces the other way. The indigo region has side (a&minus;b), and no matter what a and b are, its area (a&minus;b)&sup2; can never be negative &mdash; it's a physical square.</p>
+        <ol class="steps">
+          <li><strong>Decompose the big square.</strong> $a^2=(a-b)^2+2b(a-b)+b^2$.</li>
+          <li><strong>Solve for the indigo piece.</strong> $(a-b)^2=a^2-2ab+b^2$.</li>
+          <li><strong>Area can't be negative.</strong> $(a-b)^2\ge0 \;\Rightarrow\; a^2+b^2\ge2ab$, with equality exactly when $a=b$.</li>
+          <li><strong>Set $a=x$, $b=1/x$</strong> (any real $x\neq0$; if $x<0$ read $a=|x|$). Then $ab=1$, so
+            $$x^2+\frac{1}{x^2}\;\ge\;2\cdot x\cdot\frac1x\;=\;2.$$</li>
+        </ol>
+        <p class="note">Equality holds exactly when $x=1/x$, i.e. $x=\pm1$ &mdash; the moment the "square" degenerates to a single point and the picture is a genuine square of side 0.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>(a&minus;b)&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>2b(a&minus;b)</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>b&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9 : 3(1.2+2.3+...+n(n+1)) = n(n+1)(n+2) -->
+    <section class="slide" data-i="8">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(8)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <!-- ascending staircase of k x (k+1) rectangles, bottom-aligned, k=1..4 -->
+          <g>
+            <rect class="fx-grow" style="animation-delay:.2s" x="60"  y="340" width="20" height="40"  fill="#4A63E7" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.4s" x="80"  y="320" width="40" height="60"  fill="#E8A33D" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.6s" x="120" y="300" width="60" height="80"  fill="#5FA88F" fill-opacity="0.85"/>
+            <rect class="fx-grow" style="animation-delay:.8s" x="180" y="280" width="80" height="100" fill="#D6604D" fill-opacity="0.75"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.0s" stroke="#FAF9F5" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.85">
+            <line x1="60" y1="380" x2="80" y2="340"/>
+            <line x1="80" y1="380" x2="120" y2="320"/>
+            <line x1="120" y1="380" x2="180" y2="300"/>
+            <line x1="180" y1="380" x2="260" y2="280"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.1s">
+            <text x="70"  y="365" font-size="11" fill="#FAF9F5" text-anchor="middle">1&middot;2</text>
+            <text x="100" y="355" font-size="12" fill="#20242B" text-anchor="middle">2&middot;3</text>
+            <text x="150" y="345" font-size="13" fill="#FAF9F5" text-anchor="middle">3&middot;4</text>
+            <text x="220" y="335" font-size="14" fill="#20242B" text-anchor="middle">4&middot;5</text>
+          </g>
+          <g class="fx-draw" style="--len:520; animation-delay:1.4s">
+            <line x1="60" y1="380" x2="260" y2="380" stroke="#20242B" stroke-width="2"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.6s">
+            <text x="160" y="410" font-size="15" fill="#20242B" text-anchor="middle">1&middot;2+2&middot;3+3&middot;4+4&middot;5 = 40</text>
+            <text x="160" y="30" font-size="11" fill="#5C6470" text-anchor="middle">dashed diagonal splits each block into 2 triangular numbers: k(k+1) = 2T&#8342;</text>
+          </g>
+
+          <!-- x3 arrow -->
+          <g class="fx-fade" style="animation-delay:2.0s">
+            <text x="300" y="240" font-size="26" fill="#5C6470" text-anchor="middle" font-family="Fraunces, serif">&times;3</text>
+            <path d="M320,240 h40" stroke="#20242B" stroke-width="2.5" marker-end="url(#arrow9)"/>
+          </g>
+          <defs>
+            <marker id="arrow9" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#20242B"/>
+            </marker>
+          </defs>
+
+          <!-- resulting box footprint x height, drawn as a 2D rectangle: base n(n+1) by height (n+2) -->
+          <g class="fx-fade" style="animation-delay:2.4s">
+            <rect x="335" y="140" width="90" height="220" fill="#5FA88F" fill-opacity="0.18"/>
+          </g>
+          <g class="fx-draw" style="--len:820; animation-delay:2.4s">
+            <rect x="335" y="140" width="90" height="220" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.8s">
+            <text x="380" y="128" font-size="12" fill="#5C6470" text-anchor="middle">base = n(n+1) = 20</text>
+            <text x="440" y="252" font-size="12" fill="#5C6470" text-anchor="middle" transform="rotate(90 440 252)">height = n+2 = 6</text>
+            <text x="380" y="390" font-size="14" fill="#20242B" text-anchor="middle">volume = 20 &times; 6 = 120 = 3 &times; 40</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">09 / 30 &mdash; A telescoping product sum</div>
+        <h1 class="title">3&middot;&sum;k(k+1), read as base &times; height</h1>
+        <div class="formula-box">
+          $$3\big(1{\cdot}2+2{\cdot}3+\cdots+n(n{+}1)\big)=n(n+1)(n+2)$$
+        </div>
+        <p class="desc">Each term k(k+1) is honestly a k&times;(k+1) rectangle &mdash; stack them in an ascending staircase (shown here for n=4) and their total area is the sum you want. Split every block along its diagonal and each half is a triangular number $T_k=1+2+\cdots+k=\tfrac12k(k+1)$, so $k(k+1)=2T_k$. That turns the question into a fact about triangular numbers, which has a fully rigorous counting proof &mdash; no hand-waving needed.</p>
+        <ol class="steps">
+          <li><strong>Reduce to triangular numbers.</strong> $\sum_{k=1}^n k(k+1) = 2\sum_{k=1}^n T_k$, where $T_k=\binom{k+1}{2}$ counts the pairs you can choose from $\{1,\dots,k+1\}$.</li>
+          <li><strong>Count triples instead (hockey-stick identity).</strong> Look at all 3-element subsets $\{a<b<c\}$ of $\{1,\dots,n+2\}$ &mdash; there are $\binom{n+2}{3}$ of them. Group them by their largest element $c$: if $c=k+2$, then $a,b$ come from $\{1,\dots,k+1\}$, in $\binom{k+1}{2}=T_k$ ways. Summing over $k=1,\dots,n$ accounts for every subset exactly once: $\sum_{k=1}^n T_k=\binom{n+2}{3}=\dfrac{n(n+1)(n+2)}{6}$.</li>
+          <li><strong>Combine.</strong> $\sum_{k=1}^n k(k+1)=2\binom{n+2}{3}=\dfrac{n(n+1)(n+2)}{3}$, i.e. $3\sum_{k=1}^n k(k+1)=n(n+1)(n+2)$ &mdash; the volume of a box with base n(n+1) and height (n+2).</li>
+          <li><strong>Telescoping check, an independent route.</strong> $3k(k+1)=k(k+1)(k+2)-(k-1)k(k+1)$ telescopes to the same $n(n+1)(n+2)-0$.</li>
+          <li><strong>Check it, n=4.</strong> $1{\cdot}2+2{\cdot}3+3{\cdot}4+4{\cdot}5=2+6+12+20=40$; and $\binom{6}{3}=20=\sum T_k$ for $k=1..4$ ($T_1..T_4=1,3,6,10$), so $2\times20=40$, and $4\cdot5\cdot6=120=3\times40$. &#10003;</li>
+        </ol>
+        <p class="note">The staircase and the base&times;height box are the honest 2D and 3D pictures of the sum; the subset-counting argument above is what actually nails down why three copies of that solid have to fill the box &mdash; it's the same statement, proved by counting rather than by watching pieces slide.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1&middot;2</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>2&middot;3</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>3&middot;4</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>4&middot;5</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10 : 1 + 1/2 + 1/4 + ... = 2 -->
+    <section class="slide" data-i="9">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(9)">&#8635; replay</button>
+        <svg viewBox="0 0 480 480">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="140" y="40" width="200" height="400" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:.9s"  x="140" y="240" width="200" height="200" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="240" y="40"  width="100" height="200" fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.7s" x="140" y="140" width="100" height="100" fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:2.1s" x="190" y="40"  width="50"  height="100" fill="#D6604D" fill-opacity="0.8"/>
+          <rect class="fx-grow" style="animation-delay:2.5s" x="140" y="90"  width="50"  height="50"  fill="#4A63E7" fill-opacity="0.55"/>
+          <rect class="fx-grow" style="animation-delay:2.9s" x="165" y="40"  width="25"  height="50"  fill="#E8A33D" fill-opacity="0.55"/>
+
+          <g class="fx-fade" style="animation-delay:1.15s"><text x="240" y="345" font-size="22" fill="#FAF9F5" text-anchor="middle">1</text></g>
+          <g class="fx-fade" style="animation-delay:1.55s"><text x="290" y="145" font-size="17" fill="#20242B" text-anchor="middle">1/2</text></g>
+          <g class="fx-fade" style="animation-delay:1.95s"><text x="190" y="195" font-size="14" fill="#FAF9F5" text-anchor="middle">1/4</text></g>
+          <g class="fx-fade" style="animation-delay:2.35s"><text x="215" y="95"  font-size="11" fill="#FAF9F5" text-anchor="middle">1/8</text></g>
+          <g class="fx-fade" style="animation-delay:2.75s"><text x="165" y="118" font-size="9"  fill="#FAF9F5" text-anchor="middle">1/16</text></g>
+          <g class="fx-fade" style="animation-delay:3.1s"><text x="140" y="70"  font-size="14" fill="#5C6470" text-anchor="middle">&#8942;</text></g>
+
+          <g class="fx-fade" style="animation-delay:3.4s">
+            <text x="240" y="460" font-size="14" fill="#5C6470" text-anchor="middle">width 1</text>
+            <text x="455" y="245" font-size="14" fill="#5C6470" text-anchor="middle" transform="rotate(90 455 245)">height 2</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">10 / 30 &mdash; An infinite geometric series</div>
+        <h1 class="title">1+&frac12;+&frac14;+&frac18;+&hellip; = 2, filling a 1&times;2 rectangle</h1>
+        <div class="formula-box">
+          $$1+\frac12+\frac14+\frac18+\cdots = \sum_{k=0}^{\infty}\left(\frac12\right)^k = 2$$
+        </div>
+        <p class="desc">Take a rectangle of width 1 and height 2 &mdash; its area is exactly the number we're chasing. Cut it in half: the bottom square (area 1) is the first term. Cut what's left in half again: that piece (area &frac12;) is the second term. Keep halving whatever remains, alternating which way you cut, and the pieces spiral into a corner &mdash; covering the whole rectangle in the limit, without ever overlapping or spilling out.</p>
+        <ol class="steps">
+          <li><strong>Each step takes exactly half of what's left.</strong> After removing $1,\tfrac12,\tfrac14,\dots,\tfrac1{2^{k-1}}$, the area still uncovered is exactly $\tfrac1{2^{k-1}}$ &mdash; that's what makes the next piece the right size, forever.</li>
+          <li><strong>Partial sums.</strong> $1+\tfrac12+\cdots+\tfrac1{2^{n}}=2-\tfrac1{2^{n}}$, which is just "rectangle minus whatever tiny corner is still uncovered."</li>
+          <li><strong>Take the limit.</strong> As $n\to\infty$, the uncovered corner shrinks to a single point of area 0, so the sum reaches exactly 2 &mdash; the full rectangle, no more and no less.</li>
+        </ol>
+        <p class="note">This is the geometric series $\sum_{k\ge0} r^k = \dfrac{1}{1-r}$ at $r=\tfrac12$: first term 1, ratio $\tfrac12$, sum $\dfrac{1}{1-1/2}=2$.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1, 1/16, &hellip;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>1/2, 1/32, &hellip;</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>1/4</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>1/8</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11 : self-similar spiral, 1/4 + 1/16 + ... = 1/3 -->
+    <section class="slide" data-i="10">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(10)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1280">
+            <rect x="80" y="60" width="320" height="320" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:.5s" stroke="#5C6470" stroke-width="1" stroke-dasharray="4 4" opacity="0.6">
+            <line x1="240" y1="60" x2="240" y2="380"/>
+            <line x1="80" y1="220" x2="400" y2="220"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:.9s"  x="240" y="60"  width="160" height="160" fill="#4A63E7" fill-opacity="0.8"/>
+          <g class="fx-fade" style="animation-delay:.5s" stroke="#5C6470" stroke-width="1" stroke-dasharray="4 4" opacity="0.6">
+            <line x1="160" y1="220" x2="160" y2="380"/>
+            <line x1="80" y1="300" x2="240" y2="300"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:1.4s" x="160" y="220" width="80"  height="80"  fill="#E8A33D" fill-opacity="0.85"/>
+          <g class="fx-fade" style="animation-delay:1.0s" stroke="#5C6470" stroke-width="1" stroke-dasharray="3 3" opacity="0.6">
+            <line x1="120" y1="300" x2="120" y2="380"/>
+            <line x1="80" y1="340" x2="160" y2="340"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:1.9s" x="120" y="300" width="40"  height="40"  fill="#5FA88F" fill-opacity="0.9"/>
+          <g class="fx-fade" style="animation-delay:1.5s" stroke="#5C6470" stroke-width="1" stroke-dasharray="2 3" opacity="0.6">
+            <line x1="100" y1="340" x2="100" y2="380"/>
+            <line x1="80" y1="360" x2="120" y2="360"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:2.4s" x="100" y="340" width="20"  height="20"  fill="#D6604D" fill-opacity="0.85"/>
+
+          <g class="fx-fade" style="animation-delay:1.2s"><text x="320" y="145" font-size="20" fill="#FAF9F5" text-anchor="middle">1/4</text></g>
+          <g class="fx-fade" style="animation-delay:1.7s"><text x="200" y="265" font-size="14" fill="#20242B" text-anchor="middle">1/16</text></g>
+          <g class="fx-fade" style="animation-delay:2.2s"><text x="140" y="323" font-size="9"  fill="#FAF9F5" text-anchor="middle">1/64</text></g>
+          <g class="fx-fade" style="animation-delay:2.7s"><text x="85"  y="375" font-size="12" fill="#5C6470" text-anchor="middle">&#8601;</text></g>
+
+          <g class="fx-fade" style="animation-delay:3.0s">
+            <text x="240" y="410" font-size="14" fill="#5C6470" text-anchor="middle">whole square = area 1</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">11 / 30 &mdash; A self-similar spiral</div>
+        <h1 class="title">&frac14;+&frac1{16}+&frac1{64}+&hellip; = &frac13;, by self-similarity</h1>
+        <div class="formula-box">
+          $$\frac14+\frac1{16}+\frac1{64}+\cdots=\sum_{k=1}^{\infty}\left(\frac14\right)^k=\frac13$$
+        </div>
+        <p class="desc">Split a unit square into 4 equal quadrants and shade the top-right one &mdash; area &frac14;, the first term. Inside the <em>bottom-left</em> quadrant, repeat the exact same construction at &frac12; the linear scale: shade its top-right quadrant (area &frac1{16} of the whole), and recurse again inside its own bottom-left quadrant, spiraling into the corner forever.</p>
+        <ol class="steps">
+          <li><strong>Name the total shaded area $S$.</strong> The first shaded quadrant contributes $\tfrac14$.</li>
+          <li><strong>Self-similarity.</strong> The bottom-left quadrant is a scaled copy (linear factor $\tfrac12$, area factor $\tfrac14$) of the <em>entire</em> picture, so the shading inside it totals $\tfrac14 S$.</li>
+          <li><strong>Solve.</strong> $S=\tfrac14+\tfrac14S \;\Rightarrow\; \tfrac34S=\tfrac14 \;\Rightarrow\; S=\tfrac13$.</li>
+          <li><strong>Check it.</strong> $\tfrac14+\tfrac1{16}+\tfrac1{64}+\tfrac1{256}=0.3320\dots$, already close to $\tfrac13=0.333\dots$, and shrinking the gap by a factor of 4 every extra term.</li>
+        </ol>
+        <p class="note">Same idea as the previous slide, different ratio: $\sum_{k\ge1}r^k=\dfrac{r}{1-r}$. Here $r=\tfrac14$ gives $\dfrac{1/4}{3/4}=\tfrac13$; the rectangle slide used $r=\tfrac12$ (plus a leading 1) to get 2. Any ratio strictly between $-1$ and $1$ gives a convergent spiral like this one.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1/4</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>1/16</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>1/64</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>1/256</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12 : 1/2 + 1/4 + 1/8 + 1/16 + ... = 1 -->
+    <section class="slide" data-i="11">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(11)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="100" y="60" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:.9s"  x="100" y="60"  width="150" height="300" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="250" y="60"  width="150" height="150" fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.7s" x="250" y="210" width="75"  height="150" fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:2.1s" x="325" y="210" width="75"  height="75"  fill="#D6604D" fill-opacity="0.8"/>
+          <rect class="fx-grow" style="animation-delay:2.5s" x="325" y="285" width="75"  height="75"  fill="#D6604D" fill-opacity="0.5"/>
+
+          <g class="fx-fade" style="animation-delay:1.15s"><text x="175" y="215" font-size="22" fill="#FAF9F5" text-anchor="middle">1/2</text></g>
+          <g class="fx-fade" style="animation-delay:1.55s"><text x="325" y="140" font-size="20" fill="#20242B" text-anchor="middle">1/4</text></g>
+          <g class="fx-fade" style="animation-delay:1.95s"><text x="287" y="290" font-size="16" fill="#FAF9F5" text-anchor="middle">1/8</text></g>
+          <g class="fx-fade" style="animation-delay:2.35s"><text x="362" y="252" font-size="13" fill="#FAF9F5" text-anchor="middle">1/16</text></g>
+          <g class="fx-fade" style="animation-delay:2.75s">
+            <text x="362" y="327" font-size="13" fill="#FAF9F5" text-anchor="middle">1/16</text>
+            <circle cx="362" cy="322" r="20" fill="none" stroke="#20242B" stroke-width="1.5" stroke-dasharray="3 2"/>
+          </g>
+
+          <g class="fx-draw" style="--len:320; animation-delay:3.0s">
+            <path d="M100,378 Q240,398 400,378" fill="none" stroke="#D6604D" stroke-width="2.5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:3.3s">
+            <text x="150" y="415" font-size="16" fill="#20242B" text-anchor="middle">1 &minus; 1/16</text>
+            <text x="150" y="440" font-size="14" fill="#5C6470" text-anchor="middle">= (16&minus;1)/16 = 15/16</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">12 / 30 &mdash; The same spiral, no leading term</div>
+        <h1 class="title">&frac12;+&frac14;+&frac18;+&frac1{16}+&hellip; = 1</h1>
+        <div class="formula-box">
+          $$\frac12+\frac14+\frac18+\frac1{16}+\cdots=\sum_{k=1}^{\infty}\left(\frac12\right)^k=1$$
+        </div>
+        <p class="desc">Start from a single unit square instead of the 1&times;2 rectangle a few slides back. Shade the left half (&frac12;), then the top-right quarter of what's left (&frac14;), then the left part of <em>that</em> remainder (&frac18;), and so on. Stop after four cuts and the last sliver splits into two matching &frac1{16}'s &mdash; one shaded, one still blank &mdash; showing exactly how much is left over at any finite stage.</p>
+        <ol class="steps">
+          <li><strong>Four terms, one leftover piece.</strong> $\tfrac12+\tfrac14+\tfrac18+\tfrac1{16} = 1-\tfrac1{16} = \dfrac{16-1}{16}=\dfrac{15}{16}$.</li>
+          <li><strong>The pattern.</strong> After $n$ cuts, $\displaystyle\sum_{k=1}^{n}\frac1{2^{k}} = 1-\frac1{2^{n}}$ &mdash; the shaded area is always "whole square minus the one leftover piece."</li>
+          <li><strong>Let $n\to\infty$.</strong> The leftover piece $\tfrac1{2^n}\to 0$, so the sum climbs all the way to 1 &mdash; the whole square, exactly.</li>
+        </ol>
+        <p class="note">This is the same $\sum r^k=\dfrac{1}{1-r}$ family as the last two slides, now starting the sum at $k=1$ with $r=\tfrac12$: $\dfrac{1/2}{1-1/2}=1$. The only difference from the 1&times;2 rectangle slide is whether you count that first full square as its own term or as the "1" you already had.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1/2</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>1/4</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>1/8</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>1/16 + 1/16 left over</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13 : AM >= GM via a pinwheel of rectangles -->
+    <section class="slide" data-i="12">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(12)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="90" y="60" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <!-- Rect1: horizontal, bottom -->
+          <g class="fx-slide" style="--fy:-70px; animation-delay:.9s">
+            <rect x="90" y="60" width="190" height="110" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="2"/>
+          </g>
+          <!-- Rect2: vertical, right -->
+          <g class="fx-slide" style="--fx:70px; animation-delay:1.25s">
+            <rect x="280" y="60" width="110" height="190" fill="#E8A33D" fill-opacity="0.8" stroke="#20242B" stroke-width="2"/>
+          </g>
+          <!-- Rect3: horizontal, top -->
+          <g class="fx-slide" style="--fy:70px; animation-delay:1.6s">
+            <rect x="200" y="250" width="190" height="110" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="2"/>
+          </g>
+          <!-- Rect4: vertical, left -->
+          <g class="fx-slide" style="--fx:-70px; animation-delay:1.95s">
+            <rect x="90" y="170" width="110" height="190" fill="#E8A33D" fill-opacity="0.8" stroke="#20242B" stroke-width="2"/>
+          </g>
+
+          <!-- central leftover square (y-x)^2 -->
+          <rect class="fx-grow" style="animation-delay:2.5s" x="200" y="170" width="80" height="80" fill="#D6604D" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+
+          <g class="fx-fade" style="animation-delay:1.2s"><text x="185" y="120" font-size="16" fill="#FAF9F5" text-anchor="middle">xy</text></g>
+          <g class="fx-fade" style="animation-delay:1.55s"><text x="335" y="160" font-size="16" fill="#20242B" text-anchor="middle">xy</text></g>
+          <g class="fx-fade" style="animation-delay:1.9s"><text x="295" y="310" font-size="16" fill="#FAF9F5" text-anchor="middle">xy</text></g>
+          <g class="fx-fade" style="animation-delay:2.25s"><text x="145" y="270" font-size="16" fill="#20242B" text-anchor="middle">xy</text></g>
+          <g class="fx-fade" style="animation-delay:2.8s"><text x="240" y="215" font-size="13" fill="#FAF9F5" text-anchor="middle">(y&minus;x)&sup2;</text></g>
+
+          <g class="fx-fade" style="animation-delay:3.1s">
+            <text x="185" y="45" font-size="14" fill="#5C6470" text-anchor="middle">y</text>
+            <text x="335" y="45" font-size="14" fill="#5C6470" text-anchor="middle">x</text>
+            <text x="70" y="120" font-size="14" fill="#5C6470" text-anchor="middle">x</text>
+            <text x="70" y="270" font-size="14" fill="#5C6470" text-anchor="middle">y</text>
+            <text x="240" y="400" font-size="15" fill="#5C6470" text-anchor="middle">side = x + y</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">13 / 30 &mdash; AM &ge; GM from a pinwheel</div>
+        <h1 class="title">Arithmetic mean &ge; geometric mean, by four rectangles</h1>
+        <div class="formula-box">
+          $$\frac{x+y}{2}\;\ge\;\sqrt{xy}\qquad (x,y\ge0)$$
+        </div>
+        <p class="desc">Take four congruent x&times;y rectangles ($y\ge x$) and pack them into a square of side (x+y): two laid horizontally (top and bottom), two turned vertically (left and right), pinwheeling around the edges. They cover everything except one square hole in the middle, of side (y&minus;x).</p>
+        <ol class="steps">
+          <li><strong>Area, two ways.</strong> The big square has area $(x+y)^2$. It's also 4 rectangles plus the leftover hole: $(x+y)^2 = 4xy + (y-x)^2$.</li>
+          <li><strong>Drop a non-negative term.</strong> Since $(y-x)^2\ge0$, we get $(x+y)^2\ge 4xy$.</li>
+          <li><strong>Take square roots.</strong> Both sides are non-negative, so $x+y\ge2\sqrt{xy}$, i.e. $\dfrac{x+y}{2}\ge\sqrt{xy}$.</li>
+          <li><strong>Equality.</strong> The hole disappears &mdash; and AM meets GM &mdash; exactly when $y=x$.</li>
+        </ol>
+        <p class="note">This is the same $(a-b)^2\ge0$ idea from the earlier x&sup2;+1/x&sup2; slide, just packaged as four rectangles instead of one square subtracted from another &mdash; the pinwheel makes the "extra" $2xy$ visible as the two rectangle-pairs, leaving exactly $(y-x)^2$ over.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>horizontal xy</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>vertical xy</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>(y&minus;x)&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 14 : 1/3 + 1/9 + 1/27 + ... = 1/2, two-colour thirds -->
+    <section class="slide" data-i="13">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(13)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="100" y="60" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:.9s"  x="100"    y="60" width="100"  height="300" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.15s" x="200"   y="60" width="100"  height="300" fill="#E8A33D" fill-opacity="0.85"/>
+
+          <rect class="fx-grow" style="animation-delay:1.6s" x="300"    y="60" width="33.33" height="300" fill="#4A63E7" fill-opacity="0.6"/>
+          <rect class="fx-grow" style="animation-delay:1.85s" x="333.33" y="60" width="33.33" height="300" fill="#E8A33D" fill-opacity="0.6"/>
+
+          <rect class="fx-grow" style="animation-delay:2.3s" x="366.67" y="60" width="11.11" height="300" fill="#4A63E7" fill-opacity="0.4"/>
+          <rect class="fx-grow" style="animation-delay:2.55s" x="377.78" y="60" width="11.11" height="300" fill="#E8A33D" fill-opacity="0.4"/>
+
+          <g class="fx-fade" style="animation-delay:1.3s">
+            <text x="150" y="215" font-size="18" fill="#FAF9F5" text-anchor="middle">1/3</text>
+            <text x="250" y="215" font-size="18" fill="#20242B" text-anchor="middle">1/3</text>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.0s">
+            <text x="316.67" y="215" font-size="11" fill="#FAF9F5" text-anchor="middle" transform="rotate(-90 316.67 215)">1/9</text>
+            <text x="350" y="215" font-size="11" fill="#20242B" text-anchor="middle" transform="rotate(-90 350 215)">1/9</text>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.7s">
+            <text x="388.89" y="70" font-size="14" fill="#5C6470" text-anchor="middle">&hellip;</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:3.0s">
+            <text x="150" y="400" font-size="13" fill="#5C6470" text-anchor="middle">colour A: 1/3+1/9+1/27+&hellip;</text>
+            <text x="330" y="400" font-size="13" fill="#5C6470" text-anchor="middle">colour B: 1/3+1/9+1/27+&hellip;</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">14 / 30 &mdash; Two colours racing to fill a square</div>
+        <h1 class="title">&frac13;+&frac19;+&frac1{27}+&hellip; = &frac12;, by splitting into thirds</h1>
+        <div class="formula-box">
+          $$\frac13+\frac19+\frac1{27}+\cdots=\sum_{k=1}^{\infty}\left(\frac13\right)^k=\frac12$$
+        </div>
+        <p class="desc">Cut the unit square into three equal vertical strips. Colour the first strip indigo and the second amber &mdash; each gets &frac13; of the whole. Leave the third strip blank, and repeat the exact same three-way cut inside it: &frac19; to indigo, &frac19; to amber, and a blank sliver left for the next round. Forever.</p>
+        <ol class="steps">
+          <li><strong>Two identical series.</strong> By construction, indigo and amber each collect exactly the same total: $A=B=\tfrac13+\tfrac19+\tfrac1{27}+\cdots=S$.</li>
+          <li><strong>Nothing is wasted or double-counted.</strong> $A+B+(\text{blank sliver remaining}) = 1$, the full square, at every finite stage.</li>
+          <li><strong>Let the sliver vanish.</strong> Its width is $(\tfrac13)^n\to0$, so in the limit $A+B=1$, i.e. $2S=1$.</li>
+          <li><strong>Solve.</strong> $S=\dfrac12$.</li>
+        </ol>
+        <p class="note">Same $\sum r^k=\dfrac{r}{1-r}$ family again, now with $r=\tfrac13$: $\dfrac{1/3}{2/3}=\tfrac12$. The trick of splitting into $(m-1)$ colours plus one leftover piece, for a split into $m$ equal parts, proves $\sum_{k\ge1}(1/m)^k=\tfrac{1}{m-1}$ in general &mdash; here $m=3$ gives the $\tfrac12$ you see, and $m=2$ (one colour, one leftover) is exactly the earlier square-halving slide.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>colour A</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>colour B</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15 : 1 + 2x + 3x^2 + ... = 1/(1-x)^2, grid summed two ways -->
+    <section class="slide" data-i="14">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(14)">&#8635; replay</button>
+        <svg viewBox="0 0 620 480">
+          <!-- grid: 5x5, row i (bottom to top) x col j (left to right), cell = x^(i+j) -->
+          <g class="fx-fade" style="animation-delay:.3s">
+          <!-- checkerboard cells -->
+          <!-- row0 y292-340 -->
+          <rect x="140" y="292" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="188" y="292" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="236" y="292" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="284" y="292" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="332" y="292" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <!-- row1 y244-292 -->
+          <rect x="140" y="244" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="188" y="244" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="236" y="244" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="284" y="244" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="332" y="244" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <!-- row2 y196-244 -->
+          <rect x="140" y="196" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="188" y="196" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="236" y="196" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="284" y="196" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="332" y="196" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <!-- row3 y148-196 -->
+          <rect x="140" y="148" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="188" y="148" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="236" y="148" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="284" y="148" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="332" y="148" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <!-- row4 y100-148 -->
+          <rect x="140" y="100" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="188" y="100" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="236" y="100" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          <rect x="284" y="100" width="48" height="48" fill="#4A63E7" fill-opacity=".35"/>
+          <rect x="332" y="100" width="48" height="48" fill="#D6604D" fill-opacity=".55"/>
+          </g>
+          <g class="fx-draw" style="--len:1600; animation-delay:.6s">
+            <rect x="140" y="100" width="240" height="240" fill="none" stroke="#20242B" stroke-width="2.5"/>
+          </g>
+
+          <!-- highlight anti-diagonal i+j=2 : cells (0,2) (1,1) (2,0) -->
+          <g class="fx-fade" style="animation-delay:1.2s">
+            <rect x="236" y="292" width="48" height="48" fill="none" stroke="#E8A33D" stroke-width="3.5"/>
+            <rect x="188" y="244" width="48" height="48" fill="none" stroke="#E8A33D" stroke-width="3.5"/>
+            <rect x="140" y="196" width="48" height="48" fill="none" stroke="#E8A33D" stroke-width="3.5"/>
+            <text x="260" y="322" font-size="16" fill="#FAF9F5" text-anchor="middle">x&sup2;</text>
+            <text x="212" y="274" font-size="16" fill="#20242B" text-anchor="middle">x&sup2;</text>
+            <text x="164" y="226" font-size="16" fill="#FAF9F5" text-anchor="middle">x&sup2;</text>
+            <path d="M140,346 L284,346" stroke="#E8A33D" stroke-width="2"/>
+            <text x="212" y="366" font-size="15" fill="#E8A33D" text-anchor="middle">diagonal sum = 3x&sup2;</text>
+          </g>
+
+          <!-- row / column headers -->
+          <g class="fx-fade" style="animation-delay:.9s">
+            <text x="164" y="322" font-size="15" fill="#FAF9F5" text-anchor="middle">1</text>
+            <text x="212" y="322" font-size="14" fill="#20242B" text-anchor="middle">x</text>
+            <text x="308" y="322" font-size="13" fill="#20242B" text-anchor="middle">x&sup3;</text>
+            <text x="356" y="322" font-size="12" fill="#FAF9F5" text-anchor="middle">x&#8308;</text>
+            <text x="164" y="274" font-size="14" fill="#20242B" text-anchor="middle">x</text>
+            <text x="164" y="130" font-size="11" fill="#FAF9F5" text-anchor="middle">x&#8308;</text>
+
+            <text x="110" y="326" font-size="14" fill="#5C6470" text-anchor="end">1</text>
+            <text x="110" y="278" font-size="14" fill="#5C6470" text-anchor="end">x</text>
+            <text x="110" y="230" font-size="14" fill="#5C6470" text-anchor="end">x&sup2;</text>
+            <text x="110" y="182" font-size="14" fill="#5C6470" text-anchor="end">x&sup3;</text>
+            <text x="110" y="134" font-size="14" fill="#5C6470" text-anchor="end">x&#8308;</text>
+            <text x="105" y="90"  font-size="14" fill="#5C6470" text-anchor="end">&#8942;</text>
+            <text x="395" y="326" font-size="14" fill="#5C6470">&#8230;</text>
+          </g>
+
+          <!-- right brace: each row sums to xi * 1/(1-x) -->
+          <g class="fx-fade" style="animation-delay:1.6s">
+            <path d="M390,100 C 415,100 405,220 425,220 C 405,220 415,340 390,340" fill="none" stroke="#5C6470" stroke-width="2"/>
+            <text x="460" y="225" font-size="16" fill="#5C6470" text-anchor="middle">1/(1&minus;x)</text>
+            <text x="460" y="247" font-size="12" fill="#5C6470" text-anchor="middle">per row</text>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.0s">
+            <text x="260" y="440" font-size="16" fill="#20242B" text-anchor="middle">row sums, added up again &rarr; 1/(1&minus;x) &middot; 1/(1&minus;x)</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">15 / 30 &mdash; A grid summed two ways</div>
+        <h1 class="title">1+2x+3x&sup2;+4x&sup3;+&hellip; = 1/(1&minus;x)&sup2;</h1>
+        <div class="formula-box">
+          $$1+2x+3x^2+4x^3+\cdots=\frac{1}{1-x}\cdot\frac{1}{1-x}=\frac{1}{(1-x)^2},\quad 0<x<1$$
+        </div>
+        <p class="desc">Build an infinite grid with cell $(i,j) = x^{i}\cdot x^{j}=x^{i+j}$ for $i,j=0,1,2,\dots$. Every cell is a genuine rectangle of sides $x^i$ and $x^j$, so this is still an area statement &mdash; just an infinite one. Sum it two different ways and both must agree.</p>
+        <ol class="steps">
+          <li><strong>Sum by rows.</strong> Row $i$ is $x^i(1+x+x^2+\cdots)=\dfrac{x^i}{1-x}$. Adding all rows: $\dfrac{1}{1-x}\sum_i x^i=\dfrac{1}{1-x}\cdot\dfrac{1}{1-x}=\dfrac1{(1-x)^2}$.</li>
+          <li><strong>Sum by anti-diagonals instead.</strong> The diagonal $i+j=k$ (gold outline, $k=2$ shown) has exactly $k{+}1$ cells &mdash; one for each $i=0,\dots,k$ &mdash; every one equal to $x^k$. Its total is $(k{+}1)x^k$.</li>
+          <li><strong>Add the diagonals.</strong> $\displaystyle\sum_{k=0}^{\infty}(k+1)x^k = 1+2x+3x^2+4x^3+\cdots$.</li>
+          <li><strong>Same grid, same total.</strong> $1+2x+3x^2+4x^3+\cdots=\dfrac{1}{(1-x)^2}$.</li>
+        </ol>
+        <p class="note">This is literally "squaring" the geometric series from the earlier $\sum r^k$ slides: multiply $\dfrac{1}{1-x}$ by itself and the grid is exactly what you're computing. Two slides from now, setting $x=\tfrac12$ turns this into a fully numeric picture with total area 4.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>x&#7522;&#8314;&#7488;, i+j even</span>
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>x&#7522;&#8314;&#7488;, i+j odd</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16 : (1+3+...+(2n-1)) / ((2n+1)+...+(4n-1)) = 1/3 -->
+    <section class="slide" data-i="15">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(15)">&#8635; replay</button>
+        <svg viewBox="0 0 640 340">
+          <!-- left: (2n)x(2n) square split into 2x2 grid of n x n squares -->
+          <g class="fx-draw" style="--len:720">
+            <rect x="60" y="60" width="180" height="180" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:.7s"  x="60"  y="60"  width="90" height="90" fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:.9s"  x="150" y="60"  width="90" height="90" fill="#D6A0C7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.1s" x="60"  y="150" width="90" height="90" fill="#2E7D5B" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="150" y="150" width="90" height="90" fill="#4A63E7" fill-opacity="0.85"/>
+          <g class="fx-fade" style="animation-delay:1.5s">
+            <text x="105" y="110" font-size="15" fill="#20242B" text-anchor="middle">n&sup2;</text>
+            <text x="150" y="45"  font-size="13" fill="#5C6470" text-anchor="middle">2n</text>
+            <text x="45"  y="150" font-size="13" fill="#5C6470" text-anchor="middle">2n</text>
+            <text x="150" y="260" font-size="14" fill="#20242B" text-anchor="middle">(2n)&sup2; = 4n&sup2;</text>
+          </g>
+
+          <!-- arrow -->
+          <g class="fx-fade" style="animation-delay:1.9s">
+            <path d="M255,150 h35" stroke="#20242B" stroke-width="2.5" marker-end="url(#arrow16)"/>
+            <text x="272" y="140" font-size="11" fill="#5C6470" text-anchor="middle">rearrange</text>
+          </g>
+          <defs>
+            <marker id="arrow16" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#20242B"/>
+            </marker>
+          </defs>
+
+          <!-- right: teal square on top of a row of 3 -->
+          <rect class="fx-grow" style="animation-delay:2.2s" x="330" y="70"  width="90" height="90" fill="#5FA88F" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <g class="fx-fade" style="animation-delay:2.4s"><text x="375" y="120" font-size="14" fill="#20242B" text-anchor="middle">n&sup2;</text></g>
+
+          <rect class="fx-grow" style="animation-delay:2.6s" x="330" y="180" width="90" height="90" fill="#D6A0C7" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <rect class="fx-grow" style="animation-delay:2.8s" x="420" y="180" width="90" height="90" fill="#2E7D5B" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <rect class="fx-grow" style="animation-delay:3.0s" x="510" y="180" width="90" height="90" fill="#4A63E7" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <g class="fx-fade" style="animation-delay:3.2s">
+            <text x="465" y="230" font-size="14" fill="#FAF9F5" text-anchor="middle">3n&sup2;</text>
+            <text x="465" y="300" font-size="16" fill="#20242B" text-anchor="middle">ratio = n&sup2; / 3n&sup2; = 1/3</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">16 / 30 &mdash; A ratio of two odd-number sums</div>
+        <h1 class="title">Numerator and denominator, from one square</h1>
+        <div class="formula-box">
+          $$\frac{1+3+5+\cdots+(2n-1)}{(2n+1)+(2n+3)+\cdots+(4n-1)}=\frac13$$
+        </div>
+        <p class="desc">A few slides back, nested gnomons showed $1+3+\cdots+(2n-1)=n^2$. The same fact, applied to the first $2n$ odd numbers, gives $(2n)^2=4n^2$. Split that $(2n)\times(2n)$ square into four $n\times n$ quadrants: one quadrant is the numerator; the other three, rearranged into a row, are the denominator.</p>
+        <ol class="steps">
+          <li><strong>First $n$ odd numbers.</strong> $1+3+\cdots+(2n-1)=n^2$ (one quadrant).</li>
+          <li><strong>First $2n$ odd numbers.</strong> $1+3+\cdots+(4n-1)=(2n)^2=4n^2$ (the whole square).</li>
+          <li><strong>Subtract.</strong> The remaining $n$ odd numbers, $(2n+1)$ through $(4n-1)$, sum to $4n^2-n^2=3n^2$ &mdash; exactly the other three quadrants.</li>
+          <li><strong>Divide.</strong> $\dfrac{n^2}{3n^2}=\dfrac13$, for every $n$.</li>
+        </ol>
+        <p class="note">No limits, no telescoping &mdash; just one square, split once, and the ratio of a quarter to the other three quarters is 1/3 for every value of n.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>numerator, n&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6A0C7"></span>denominator (3 &times; n&sup2;)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 17 : 1 + 2(1/2) + 3(1/4) + 4(1/8) + ... = 4, self-similar grid -->
+    <section class="slide" data-i="16">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(16)">&#8635; replay</button>
+        <svg viewBox="0 0 500 460">
+          <!-- limiting square (side = 1/(1-1/2) = 2 units), dashed -->
+          <g class="fx-fade" style="animation-delay:.3s">
+            <rect x="100" y="50" width="300" height="300" fill="none" stroke="#5C6470" stroke-width="1.5" stroke-dasharray="6 5"/>
+          </g>
+
+          <!-- self-similar cells, sizes proportional to (1/2)^(i+j); grid anchored bottom-left at (100,350) -->
+          <!-- row0 (h150,y200-350), row1(h75,y125-200), row2(h37.5,y87.5-125), row3(h18.75,y68.75-87.5) -->
+          <!-- col0 (w150,x100-250), col1(w75,x250-325), col2(w37.5,x325-362.5), col3(w18.75,x362.5-381.25) -->
+
+          <rect class="fx-grow" style="animation-delay:.6s"  x="100"    y="200"   width="150"   height="150"   fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:.85s" x="250"    y="200"   width="75"    height="150"   fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:.85s" x="100"    y="125"   width="150"   height="75"    fill="#E8A33D" fill-opacity="0.85"/>
+
+          <rect class="fx-grow" style="animation-delay:1.15s" x="325"   y="200"   width="37.5"  height="150"   fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.15s" x="250"   y="125"   width="75"    height="75"    fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.15s" x="100"   y="87.5"  width="150"   height="37.5"  fill="#5FA88F" fill-opacity="0.85"/>
+
+          <rect class="fx-grow" style="animation-delay:1.45s" x="362.5" y="200"   width="18.75" height="150"   fill="#D6604D" fill-opacity="0.75"/>
+          <rect class="fx-grow" style="animation-delay:1.45s" x="325"   y="125"   width="37.5"  height="75"    fill="#D6604D" fill-opacity="0.75"/>
+          <rect class="fx-grow" style="animation-delay:1.45s" x="250"   y="87.5"  width="75"    height="37.5"  fill="#D6604D" fill-opacity="0.75"/>
+          <rect class="fx-grow" style="animation-delay:1.45s" x="100"   y="68.75" width="150"   height="18.75" fill="#D6604D" fill-opacity="0.75"/>
+
+          <rect class="fx-fade" style="animation-delay:1.75s" x="362.5" y="125"   width="18.75" height="75"    fill="#4A63E7" fill-opacity="0.5"/>
+          <rect class="fx-fade" style="animation-delay:1.75s" x="325"   y="87.5"  width="37.5"  height="37.5"  fill="#4A63E7" fill-opacity="0.5"/>
+          <rect class="fx-fade" style="animation-delay:1.75s" x="250"   y="68.75" width="75"    height="18.75" fill="#4A63E7" fill-opacity="0.5"/>
+
+          <g class="fx-fade" style="animation-delay:2.0s" stroke="#FAF9F5" stroke-width="1" opacity="0.7">
+            <path d="M100,200 H400 M100,125 H400 M100,87.5 H400 M100,68.75 H400
+                     M250,50 V350 M325,50 V350 M362.5,50 V350"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.3s">
+            <text x="175" y="285" font-size="24" fill="#FAF9F5" text-anchor="middle">1</text>
+            <text x="287" y="285" font-size="15" fill="#20242B" text-anchor="middle">1/2</text>
+            <text x="175" y="170" font-size="15" fill="#20242B" text-anchor="middle">1/2</text>
+            <text x="343" y="285" font-size="11" fill="#FAF9F5" text-anchor="middle">1/4</text>
+            <text x="287" y="170" font-size="13" fill="#FAF9F5" text-anchor="middle">1/4</text>
+            <text x="175" y="112" font-size="12" fill="#FAF9F5" text-anchor="middle">1/4</text>
+            <text x="343" y="170" font-size="9"  fill="#20242B" text-anchor="middle">1/8</text>
+            <text x="287" y="112" font-size="10" fill="#20242B" text-anchor="middle">1/8</text>
+            <text x="175" y="82"  font-size="9"  fill="#20242B" text-anchor="middle">1/8</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.7s">
+            <text x="392" y="65" font-size="13" fill="#5C6470" text-anchor="middle">&#8942;</text>
+            <text x="392" y="345" font-size="13" fill="#5C6470">&#8942;</text>
+          </g>
+
+          <!-- left brace: side length 2 -->
+          <g class="fx-fade" style="animation-delay:3.0s">
+            <path d="M85,50 C 65,50 75,200 55,200 C 75,200 65,350 85,350" fill="none" stroke="#5C6470" stroke-width="2"/>
+            <text x="35" y="205" font-size="18" fill="#5C6470" text-anchor="middle">2</text>
+          </g>
+          <g class="fx-fade" style="animation-delay:3.3s">
+            <text x="250" y="440" font-size="15" fill="#20242B" text-anchor="middle">total area = 2 &times; 2 = 4</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">17 / 30 &mdash; The grid, made numeric</div>
+        <h1 class="title">1+2(&frac12;)+3(&frac14;)+4(&frac18;)+&hellip; = 4</h1>
+        <div class="formula-box">
+          $$\sum_{i=1}^{\infty} i\cdot\left(\frac12\right)^{i-1} = 4$$
+        </div>
+        <p class="desc">Set $x=\tfrac12$ in the grid from two slides ago, but now draw each cell at its <em>true</em> size: row $i$ has height $(\tfrac12)^i$ and column $j$ has width $(\tfrac12)^j$, so cell area really is $(\tfrac12)^{i+j}$ &mdash; no separate bookkeeping needed. The whole grid becomes a $2\times2$ square, since each side sums to $\dfrac{1}{1-1/2}=2$.</p>
+        <ol class="steps">
+          <li><strong>Total area, directly.</strong> Side $=1+\tfrac12+\tfrac14+\cdots=2$, so the square has area $2\times2=4$.</li>
+          <li><strong>Total area, by anti-diagonals.</strong> Diagonal $k$ has $(k{+}1)$ cells of size $(\tfrac12)^k$ each, contributing $(k{+}1)(\tfrac12)^k$ &mdash; matching term $k{+}1$ of the sum exactly ($k=0$: 1; $k=1$: two &frac12;'s $=1$; $k=2$: three &frac14;'s $=\tfrac34$; &hellip;).</li>
+          <li><strong>Equate.</strong> $\displaystyle\sum_{i=1}^\infty i\left(\tfrac12\right)^{i-1}=4$.</li>
+        </ol>
+        <p class="note">Because the cells are drawn to true scale here, this picture is literally the $x=\tfrac12$ photograph of the general grid &mdash; same argument, same diagonals, just with area you can see instead of area you have to imagine.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>k=0 (1)</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>k=1 (2&middot;&frac12;)</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>k=2 (3&middot;&frac14;)</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>k=3 (4&middot;&frac18;)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18 : Area of a parallelogram = base x height, via a rectangle -->
+    <section class="slide" data-i="17">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(17)">&#8635; replay</button>
+        <svg viewBox="0 0 560 400">
+          <!-- height guide -->
+          <g class="fx-fade" style="animation-delay:.1s">
+            <line x1="220" y1="140" x2="220" y2="320" stroke="#5C6470" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="235" y="235" font-size="15" fill="#5C6470">h</text>
+          </g>
+
+          <!-- parallelogram A(120,320) B(360,320) C(460,140) D(220,140) -->
+          <polygon class="fx-grow" style="animation-delay:.3s" points="120,320 360,320 460,140 220,140" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="2.5"/>
+          <g class="fx-fade" style="animation-delay:.7s">
+            <text x="270" y="245" font-size="18" fill="#FAF9F5" text-anchor="middle">parallelogram</text>
+          </g>
+
+          <!-- cut line D to Q(220,320) -->
+          <g class="fx-draw" style="--len:180; animation-delay:1.2s">
+            <line x1="220" y1="140" x2="220" y2="320" stroke="#D6604D" stroke-width="2.5" stroke-dasharray="8 5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.5s">
+            <text x="150" y="255" font-size="13" fill="#20242B" text-anchor="middle">cut</text>
+          </g>
+
+          <!-- sliver triangle A,Q,D sliding right by 240 (=b) to attach at the far end -->
+          <polygon class="fx-slide" style="--fx:-240px; animation-delay:1.9s" points="360,320 460,320 460,140" fill="#D6604D" fill-opacity="0.55" stroke="#20242B" stroke-width="2"/>
+
+          <!-- final rectangle -->
+          <g class="fx-draw" style="--len:1240; animation-delay:2.4s">
+            <rect x="220" y="140" width="240" height="180" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.8s">
+            <text x="340" y="350" font-size="16" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="480" y="235" font-size="16" fill="#5C6470" text-anchor="middle">h</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">18 / 30 &mdash; Area of a parallelogram</div>
+        <h1 class="title">base &times; height, one shear away</h1>
+        <div class="formula-box">
+          $$\text{Area} = b\,h$$
+        </div>
+        <p class="desc">Drop a perpendicular from one top vertex down to the base line &mdash; that length is the height h. Cut the parallelogram along that perpendicular. The sliver you removed and the gap left behind are congruent (opposite sides of a parallelogram are equal and parallel), so sliding the sliver the full length of the base fills the gap exactly, with no overlap and no hole.</p>
+        <ol class="steps">
+          <li><strong>Cutting and sliding don't change area.</strong> The parallelogram and the rearranged shape have the same total area.</li>
+          <li><strong>The rearranged shape is a rectangle.</strong> Its base is still b (the same base you started with) and its height is still h (the perpendicular distance between the two parallel sides never changed).</li>
+          <li><strong>Read off the rectangle's area.</strong> $\text{Area}=b\times h$.</li>
+        </ol>
+        <p class="note">If the foot of the perpendicular lands outside the base segment (a very "leaning" parallelogram), the same cut-and-slide works after extending the base line &mdash; the sliver just needs sliding by a different amount, but the conclusion is identical. This is the same shearing move used two slides back to turn a triangle's parallelogram into a rectangle &mdash; here it's applied directly, with no triangle detour needed.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>parallelogram</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>relocated sliver</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 19 : 1 - 1/3 + 1/9 - 1/27 + ... = 3/4 -->
+    <section class="slide" data-i="18">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(18)">&#8635; replay</button>
+        <svg viewBox="0 0 480 420">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="100" y="50" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:.7s"  x="100" y="50"      width="300" height="200"    fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.2s" x="100" y="250"     width="300" height="66.67"  fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.7s" x="100" y="316.67"  width="300" height="22.22"  fill="#4A63E7" fill-opacity="0.6"/>
+          <rect class="fx-grow" style="animation-delay:2.2s" x="100" y="338.89"  width="300" height="7.41"   fill="#E8A33D" fill-opacity="0.6"/>
+          <g class="fx-fade" style="animation-delay:2.5s"><text x="240" y="410" font-size="12" fill="#5C6470" text-anchor="middle">&#8942; continues, shrinking by &frac13; each time</text></g>
+
+          <g class="fx-fade" style="animation-delay:1.0s"><text x="240" y="155" font-size="18" fill="#FAF9F5" text-anchor="middle">2/3</text></g>
+          <g class="fx-fade" style="animation-delay:1.5s"><text x="240" y="288" font-size="13" fill="#20242B" text-anchor="middle">2/27</text></g>
+          <g class="fx-fade" style="animation-delay:2.0s"><text x="240" y="330" font-size="9"  fill="#FAF9F5" text-anchor="middle">2/243</text></g>
+
+          <g class="fx-fade" style="animation-delay:2.8s">
+            <text x="60" y="150" font-size="13" fill="#4A63E7" text-anchor="middle">indigo</text>
+            <text x="60" y="165" font-size="11" fill="#5C6470" text-anchor="middle">total 3/4</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">19 / 30 &mdash; An alternating geometric series</div>
+        <h1 class="title">1&minus;&frac13;+&frac19;&minus;&frac1{27}+&hellip; = &frac34;</h1>
+        <div class="formula-box">
+          $$1-\frac13+\frac19-\frac1{27}+\cdots=\sum_{k=0}^{\infty}\left(-\frac13\right)^k=\frac34$$
+        </div>
+        <p class="desc">Split the unit square: the top &frac23; is solid indigo. The bottom &frac13; strip holds a <em>colour-inverted</em> copy of the same pattern at &frac13; the area &mdash; wherever the big picture would be indigo, this nested copy is amber instead, and vice versa. Keep nesting forever.</p>
+        <ol class="steps">
+          <li><strong>Name the indigo fraction $S$.</strong> The top contributes $\tfrac23$ for certain.</li>
+          <li><strong>The nested copy is inverted.</strong> Its indigo fraction is $1-S$ (colours swapped), and it's worth $\tfrac13$ of the whole, so it contributes $\tfrac13(1-S)$.</li>
+          <li><strong>Self-similarity.</strong> $S=\tfrac23+\tfrac13(1-S) \;\Rightarrow\; \tfrac43S=1 \;\Rightarrow\; S=\tfrac34$.</li>
+          <li><strong>Matches the series, paired up.</strong> $(1-\tfrac13)+(\tfrac19-\tfrac1{27})+(\tfrac1{81}-\tfrac1{243})+\cdots=\tfrac23+\tfrac2{27}+\tfrac2{243}+\cdots$ &mdash; exactly the indigo bands shown, level by level.</li>
+        </ol>
+        <p class="note">Same recursive-square family as the earlier &frac13;+&frac19;+&hellip;=&frac12; slide, but the sign alternation shows up as a colour flip instead of a fixed "leftover" region.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>indigo levels (sum 3/4)</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>amber levels (sum 1/4)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20 : sum 1/(n(n+1)) = 1, telescoping stack -->
+    <section class="slide" data-i="19">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(19)">&#8635; replay</button>
+        <svg viewBox="0 0 420 420">
+          <g class="fx-draw" style="--len:1000">
+            <rect x="120" y="60" width="180" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:.7s"  x="120" y="210" width="180" height="150" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.0s" x="120" y="160" width="180" height="50"  fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="120" y="135" width="180" height="25"  fill="#5FA88F" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.6s" x="120" y="120" width="180" height="15"  fill="#D6604D" fill-opacity="0.8"/>
+          <rect class="fx-grow" style="animation-delay:1.9s" x="120" y="110" width="180" height="10"  fill="#4A63E7" fill-opacity="0.55"/>
+
+          <g class="fx-fade" style="animation-delay:1.0s"><text x="210" y="290" font-size="17" fill="#FAF9F5" text-anchor="middle">1/2</text></g>
+          <g class="fx-fade" style="animation-delay:1.3s"><text x="210" y="188" font-size="14" fill="#20242B" text-anchor="middle">1/6</text></g>
+          <g class="fx-fade" style="animation-delay:1.6s"><text x="210" y="150" font-size="11" fill="#FAF9F5" text-anchor="middle">1/12</text></g>
+          <g class="fx-fade" style="animation-delay:1.9s"><text x="330" y="129" font-size="10" fill="#5C6470" text-anchor="middle">1/20</text></g>
+          <g class="fx-fade" style="animation-delay:2.2s"><text x="330" y="116" font-size="9"  fill="#5C6470" text-anchor="middle">1/30</text></g>
+          <g class="fx-fade" style="animation-delay:2.5s"><text x="210" y="90" font-size="12" fill="#5C6470" text-anchor="middle">&#8942; shrinking, height &rarr; 0</text></g>
+
+          <g class="fx-fade" style="animation-delay:2.9s">
+            <path d="M110,360 L110,60" stroke="#5C6470" stroke-width="1" stroke-dasharray="4 4"/>
+            <text x="95" y="365" font-size="12" fill="#5C6470" text-anchor="middle">0</text>
+            <text x="95" y="65"  font-size="12" fill="#5C6470" text-anchor="middle">1</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">20 / 30 &mdash; A telescoping sum</div>
+        <h1 class="title">&sum; 1/(n(n+1)) = 1, one segment at a time</h1>
+        <div class="formula-box">
+          $$\frac{1}{1\cdot2}+\frac{1}{2\cdot3}+\frac{1}{3\cdot4}+\cdots=1$$
+        </div>
+        <p class="desc">Mark the points $1, \tfrac12, \tfrac13, \tfrac14,\dots$ on a segment of length 1, all the way down toward 0. The gap between consecutive marks $\tfrac1n$ and $\tfrac1{n+1}$ has length exactly $\tfrac1n-\tfrac1{n+1}=\dfrac{1}{n(n+1)}$. Stack those gaps as rectangles of a fixed width and you rebuild the whole segment.</p>
+        <ol class="steps">
+          <li><strong>Partial fractions, geometrically.</strong> $\dfrac1{n(n+1)}=\dfrac1n-\dfrac1{n+1}$ is just the length of one gap between two marks.</li>
+          <li><strong>Stack $N$ gaps.</strong> $\displaystyle\sum_{n=1}^{N}\frac1{n(n+1)} = \left(1-\tfrac12\right)+\left(\tfrac12-\tfrac13\right)+\cdots+\left(\tfrac1N-\tfrac1{N+1}\right)=1-\frac1{N+1}$ &mdash; every interior mark cancels, telescoping to just the two ends.</li>
+          <li><strong>Let $N\to\infty$.</strong> $\tfrac1{N+1}\to0$, so the stacked rectangles fill the entire unit segment: the sum is exactly 1.</li>
+        </ol>
+        <p class="note">Unlike the earlier geometric-series spirals, nothing here shrinks by a constant ratio &mdash; the gaps are $\tfrac12,\tfrac16,\tfrac1{12},\tfrac1{20},\dots$, each exactly what's needed to reach the next mark, no more.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1/2</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>1/6</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>1/12</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>1/20, 1/30, &hellip;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 21 : Area of a trapezium = 1/2 (a+b) h -->
+    <section class="slide" data-i="20">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(20)">&#8635; replay</button>
+        <svg viewBox="0 0 620 400">
+          <g class="fx-fade" style="animation-delay:.1s">
+            <line x1="160" y1="180" x2="160" y2="320" stroke="#5C6470" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <text x="175" y="255" font-size="15" fill="#5C6470">h</text>
+          </g>
+
+          <!-- original trapezoid A(100,320) B(320,320) C(280,180) D(160,180) -->
+          <polygon class="fx-grow" style="animation-delay:.3s" points="100,320 320,320 280,180 160,180" fill="#4A63E7" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          <g class="fx-fade" style="animation-delay:.7s"><text x="220" y="260" font-size="15" fill="#FAF9F5" text-anchor="middle">trapezium</text></g>
+
+          <!-- rotated copy: A'(500,180) C(280,180) B(320,320) D'(440,320) -->
+          <polygon class="fx-slide" style="--fx:180px; --fy:-140px; animation-delay:1.2s" points="500,180 280,180 320,320 440,320" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          <g class="fx-fade" style="animation-delay:1.6s"><text x="400" y="260" font-size="14" fill="#20242B" text-anchor="middle">rotated 180&deg;</text></g>
+
+          <!-- parallelogram outline -->
+          <g class="fx-draw" style="--len:1400; animation-delay:2.1s">
+            <polygon points="100,320 160,180 500,180 440,320" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.5s">
+            <text x="330" y="165" font-size="15" fill="#5C6470" text-anchor="middle">a + b</text>
+            <text x="270" y="345" font-size="15" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="220" y="165" font-size="13" fill="#5C6470" text-anchor="middle">b</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">21 / 30 &mdash; Area of a trapezium</div>
+        <h1 class="title">&frac12;(a+b)h, one rotation from a rectangle</h1>
+        <div class="formula-box">
+          $$\text{Area} = \frac12(a+b)h$$
+        </div>
+        <p class="desc">A trapezium has parallel sides a (bottom) and b (top), height h. Rotate a congruent copy 180&deg; about the midpoint of one slanted side and attach it: the two copies interlock into a single parallelogram with base $(a+b)$ and the same height h.</p>
+        <ol class="steps">
+          <li><strong>Two trapezia, one parallelogram.</strong> The rotated copy's top edge sits flush against the original's bottom edge (and vice versa), so together they form a parallelogram &mdash; no gap, no overlap.</li>
+          <li><strong>Read off its area.</strong> From two slides back: a parallelogram's area is base &times; height. Here that's $(a+b)\times h$.</li>
+          <li><strong>Halve it.</strong> The parallelogram is exactly two copies of the trapezium, so $\text{Area(trapezium)}=\dfrac12(a+b)h$.</li>
+        </ol>
+        <p class="note">This reuses the parallelogram-area slide directly &mdash; the only new idea here is that <em>two</em> copies of a trapezium, not a triangle, tile a parallelogram.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>trapezium</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>rotated copy</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 22 : Completing the square -->
+    <section class="slide" data-i="21">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(21)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <rect class="fx-grow" style="animation-delay:.3s" x="100" y="80" width="200" height="200" fill="#4A63E7" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <g class="fx-fade" style="animation-delay:.6s"><text x="200" y="190" font-size="26" fill="#FAF9F5" text-anchor="middle">x&sup2;</text></g>
+
+          <rect class="fx-grow" style="animation-delay:1.0s" x="300" y="80" width="45" height="200" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <rect class="fx-grow" style="animation-delay:1.3s" x="100" y="280" width="200" height="45" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="2"/>
+          <g class="fx-fade" style="animation-delay:1.6s">
+            <text x="322" y="185" font-size="12" fill="#20242B" text-anchor="middle" transform="rotate(90 322 185)">(b/2)x</text>
+            <text x="200" y="306" font-size="12" fill="#20242B" text-anchor="middle">(b/2)x</text>
+          </g>
+
+          <rect class="fx-fade" style="animation-delay:2.0s" x="300" y="280" width="45" height="45" fill="none" stroke="#D6604D" stroke-width="2.5" stroke-dasharray="5 4"/>
+          <g class="fx-fade" style="animation-delay:2.3s"><text x="322" y="307" font-size="10" fill="#D6604D" text-anchor="middle">(b/2)&sup2;</text></g>
+
+          <g class="fx-draw" style="--len:980; animation-delay:2.7s">
+            <rect x="100" y="80" width="245" height="245" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:3.1s">
+            <text x="222" y="65" font-size="14" fill="#5C6470" text-anchor="middle">x + b/2</text>
+            <text x="85" y="200" font-size="14" fill="#5C6470" text-anchor="middle">x + b/2</text>
+            <text x="200" y="440" font-size="15" fill="#20242B" text-anchor="middle">(x+b/2)&sup2; = x&sup2; + bx + (b/2)&sup2;</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">22 / 30 &mdash; Completing the square</div>
+        <h1 class="title">x&sup2;+bx becomes a square, minus a corner</h1>
+        <div class="formula-box">
+          $$x^2+bx=\left(x+\frac{b}{2}\right)^2-\left(\frac{b}{2}\right)^2$$
+        </div>
+        <p class="desc">Start with an x&times;x square and a b&times;x rectangle stuck to its side (together, area $x^2+bx$). Split the bx rectangle into two matching $\tfrac{b}{2}\times x$ strips, and wrap one around the bottom instead of leaving both on the right. Almost a bigger square appears &mdash; missing only a $\tfrac b2\times\tfrac b2$ corner.</p>
+        <ol class="steps">
+          <li><strong>Rearrange, don't resize.</strong> Two strips of total area bx are just relocated &mdash; the total shaded area is still $x^2+bx$.</li>
+          <li><strong>Name the big square.</strong> Filling in the missing corner would give a full square of side $x+\tfrac b2$, area $\left(x+\tfrac b2\right)^2$.</li>
+          <li><strong>Subtract what's missing.</strong> $x^2+bx = \left(x+\tfrac b2\right)^2-\left(\tfrac b2\right)^2$.</li>
+        </ol>
+        <p class="note">This is the geometric engine behind solving any quadratic: $x^2+bx+c=0 \iff \left(x+\tfrac b2\right)^2=\tfrac{b^2}{4}-c$, read directly off this same picture.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>x&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>bx (two strips)</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>missing (b/2)&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 23 : Sum of cubes = square of the sum (Nicomachus) -->
+    <section class="slide" data-i="22">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(22)">&#8635; replay</button>
+        <svg viewBox="0 0 420 460">
+          <defs>
+            <pattern id="unitgrid23" width="24" height="24" patternUnits="userSpaceOnUse">
+              <rect width="24" height="24" fill="none" stroke="rgba(32,36,43,0.2)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <!-- side lengths: T1=1,T2=3,T3=6,T4=10 units, unit=24px, anchor (100,50) -->
+          <rect class="fx-grow" style="animation-delay:.2s" x="100" y="50" width="24" height="24" fill="#4A63E7" fill-opacity="0.85"/>
+          <path class="fx-fade" style="animation-delay:1.0s" d="M124,50 L172,50 L172,122 L100,122 L100,74 L124,74 Z" fill="#E8A33D" fill-opacity="0.85"/>
+          <path class="fx-fade" style="animation-delay:1.8s" d="M172,50 L244,50 L244,194 L100,194 L100,122 L172,122 Z" fill="#5FA88F" fill-opacity="0.85"/>
+          <path class="fx-fade" style="animation-delay:2.6s" d="M244,50 L340,50 L340,290 L100,290 L100,194 L244,194 Z" fill="#D6604D" fill-opacity="0.75"/>
+
+          <rect x="100" y="50" width="240" height="240" fill="url(#unitgrid23)"/>
+          <g class="fx-draw" style="--len:960; animation-delay:3.1s">
+            <rect x="100" y="50" width="240" height="240" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:.6s"><text x="112" y="66" font-size="10" fill="#FAF9F5" text-anchor="middle">1&sup3;</text></g>
+          <g class="fx-fade" style="animation-delay:1.4s"><text x="150" y="98" font-size="13" fill="#20242B" text-anchor="middle">2&sup3;</text></g>
+          <g class="fx-fade" style="animation-delay:2.2s"><text x="210" y="160" font-size="16" fill="#FAF9F5" text-anchor="middle">3&sup3;</text></g>
+          <g class="fx-fade" style="animation-delay:3.0s"><text x="290" y="240" font-size="19" fill="#FAF9F5" text-anchor="middle">4&sup3;</text></g>
+
+          <g class="fx-fade" style="animation-delay:3.5s">
+            <text x="220" y="360" font-size="15" fill="#20242B" text-anchor="middle">1&sup3;+2&sup3;+3&sup3;+4&sup3; = 100 = 10&sup2; = (1+2+3+4)&sup2;</text>
+            <text x="220" y="30" font-size="13" fill="#5C6470" text-anchor="middle">side = 1+2+3+4 = 10</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">23 / 30 &mdash; Nicomachus's theorem</div>
+        <h1 class="title">1&sup3;+2&sup3;+&hellip;+n&sup3; = (1+2+&hellip;+n)&sup2;</h1>
+        <div class="formula-box">
+          $$1^3+2^3+\cdots+n^3=\left(1+2+\cdots+n\right)^2$$
+        </div>
+        <p class="desc">Let $T_k=1+2+\cdots+k$. Nest gnomons around a growing square exactly as with the odd numbers &mdash; but grow the square from side $T_{k-1}$ to side $T_k$ instead of from $k-1$ to $k$. Each border added has area exactly $k^3$.</p>
+        <ol class="steps">
+          <li><strong>Why the gnomon is $k^3$.</strong> $T_k^2-T_{k-1}^2=(T_k-T_{k-1})(T_k+T_{k-1})=k\cdot(T_k+T_{k-1})$.</li>
+          <li><strong>Simplify the bracket.</strong> $T_k+T_{k-1}=\tfrac{k(k+1)}{2}+\tfrac{(k-1)k}{2}=\tfrac{k[(k+1)+(k-1)]}{2}=k^2$.</li>
+          <li><strong>Multiply back.</strong> Gnomon area $=k\cdot k^2=k^3$, exactly.</li>
+          <li><strong>Add up all $n$ gnomons.</strong> Their total is the whole $T_n\times T_n$ square: $\sum_{k=1}^n k^3=T_n^2=\left(\sum_{k=1}^n k\right)^2$.</li>
+        </ol>
+        <p class="note">Same nesting trick as the odd-number slide &mdash; only the growth rate of the square's side changes, from $+1$ each step to $+k$ each step.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>1&sup3;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>2&sup3;</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>3&sup3;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>4&sup3;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 24 : a^3 - b^3 = (a-b)(a^2+ab+b^2), a telescoping rectangle -->
+    <section class="slide" data-i="23">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(23)">&#8635; replay</button>
+        <svg viewBox="0 0 480 460">
+          <g class="fx-draw" style="--len:900">
+            <rect x="150" y="50" width="140" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+
+          <rect class="fx-grow" style="animation-delay:.6s"  x="150" y="200" width="140" height="150" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.0s" x="150" y="110" width="140" height="90"  fill="#E8A33D" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.4s" x="150" y="50"  width="140" height="60"  fill="#5FA88F" fill-opacity="0.85"/>
+
+          <g class="fx-fade" style="animation-delay:1.9s">
+            <text x="220" y="282" font-size="22" fill="#FAF9F5" text-anchor="middle">a&sup2;</text>
+            <text x="220" y="160" font-size="18" fill="#20242B" text-anchor="middle">ab</text>
+            <text x="220" y="85"  font-size="15" fill="#20242B" text-anchor="middle">b&sup2;</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.3s">
+            <text x="220" y="380" font-size="15" fill="#5C6470" text-anchor="middle">a &minus; b</text>
+            <text x="330" y="200" font-size="15" fill="#5C6470" text-anchor="middle">a&sup2;+ab+b&sup2;</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.7s">
+            <text x="220" y="420" font-size="14" fill="#20242B" text-anchor="middle">(a&minus;b)a&sup2; + (a&minus;b)ab + (a&minus;b)b&sup2; = a&sup3;&minus;b&sup3;</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">24 / 30 &mdash; Difference of cubes</div>
+        <h1 class="title">a&sup3;&minus;b&sup3; = (a&minus;b)(a&sup2;+ab+b&sup2;)</h1>
+        <div class="formula-box">
+          $$a^3-b^3=(a-b)\left(a^2+ab+b^2\right)$$
+        </div>
+        <p class="desc">Build one rectangle of width $(a-b)$ and height $(a^2+ab+b^2)$, stacked as three strips of heights $a^2$, $ab$, $b^2$. Its total area is $(a-b)(a^2+ab+b^2)$ by definition &mdash; the question is just what that equals once you expand each strip.</p>
+        <ol class="steps">
+          <li><strong>Expand each strip.</strong> $(a-b)a^2=a^3-a^2b$; &nbsp; $(a-b)ab=a^2b-ab^2$; &nbsp; $(a-b)b^2=ab^2-b^3$.</li>
+          <li><strong>Stack and cancel.</strong> Add the three: $-a^2b$ meets $+a^2b$, and $-ab^2$ meets $+ab^2$ &mdash; both pairs vanish, leaving only $a^3-b^3$.</li>
+          <li><strong>Check it.</strong> $a=5,\,b=3$: rectangle is $2\times49=98$, and $5^3-3^3=125-27=98$. &#10003;</li>
+        </ol>
+        <p class="note">The same telescoping-strip idea used for $\sum k(k+1)$ earlier &mdash; here it's baked into a single rectangle instead of a running sum, so the cancellation happens all at once.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>a&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>ab</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>b&sup2;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 25 : (a+b)^2 + (a-b)^2 = 2(a^2+b^2) -->
+    <section class="slide" data-i="24">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(24)">&#8635; replay</button>
+        <svg viewBox="0 0 560 380">
+          <!-- (a+b)^2 mini square -->
+          <g class="fx-fade" style="animation-delay:.3s">
+            <rect x="40" y="60" width="140" height="140" fill="none" stroke="#20242B" stroke-width="2.5"/>
+            <rect x="40" y="60" width="88" height="88" fill="#4A63E7" fill-opacity="0.85"/>
+            <rect x="128" y="60" width="52" height="88" fill="#D6604D" fill-opacity="0.6"/>
+            <rect x="40" y="148" width="88" height="52" fill="#D6604D" fill-opacity="0.6"/>
+            <rect x="128" y="148" width="52" height="52" fill="#E8A33D" fill-opacity="0.85"/>
+            <text x="110" y="240" font-size="14" fill="#5C6470" text-anchor="middle">(a+b)&sup2;</text>
+          </g>
+
+          <text x="205" y="140" font-size="26" fill="#20242B" text-anchor="middle" font-family="Fraunces, serif" class="fx-fade" style="animation-delay:.7s">+</text>
+
+          <!-- (a-b)^2 mini square, from the earlier slide's construction -->
+          <g class="fx-fade" style="animation-delay:1.0s">
+            <rect x="230" y="60" width="120" height="120" fill="none" stroke="#20242B" stroke-width="2.5"/>
+            <rect x="230" y="60" width="84" height="84" fill="#4A63E7" fill-opacity="0.85"/>
+            <rect x="314" y="60" width="36" height="84" fill="#D6604D" fill-opacity="0.6"/>
+            <rect x="230" y="144" width="84" height="36" fill="#D6604D" fill-opacity="0.6"/>
+            <rect x="314" y="144" width="36" height="36" fill="#E8A33D" fill-opacity="0.85"/>
+            <text x="290" y="220" font-size="14" fill="#5C6470" text-anchor="middle">(a&minus;b)&sup2;</text>
+          </g>
+
+          <text x="378" y="140" font-size="26" fill="#20242B" text-anchor="middle" font-family="Fraunces, serif" class="fx-fade" style="animation-delay:1.3s">=</text>
+
+          <!-- the +2ab and -2ab pieces cancel: strike them through -->
+          <g class="fx-fade" style="animation-delay:1.7s">
+            <line x1="128" y1="60" x2="180" y2="148" stroke="#D6604D" stroke-width="2.5"/>
+            <line x1="314" y1="60" x2="350" y2="144" stroke="#D6604D" stroke-width="2.5"/>
+            <text x="255" y="260" font-size="13" fill="#D6604D" text-anchor="middle">the two 2ab-strips cancel</text>
+          </g>
+
+          <!-- result: two a^2 squares and two b^2 squares -->
+          <g class="fx-grow" style="animation-delay:2.2s"><rect x="410" y="60"  width="60" height="60" fill="#4A63E7" fill-opacity="0.85"/></g>
+          <g class="fx-grow" style="animation-delay:2.4s"><rect x="480" y="60"  width="60" height="60" fill="#4A63E7" fill-opacity="0.85"/></g>
+          <g class="fx-grow" style="animation-delay:2.6s"><rect x="410" y="130" width="38" height="38" fill="#E8A33D" fill-opacity="0.85"/></g>
+          <g class="fx-grow" style="animation-delay:2.8s"><rect x="460" y="130" width="38" height="38" fill="#E8A33D" fill-opacity="0.85"/></g>
+          <g class="fx-fade" style="animation-delay:3.1s">
+            <text x="475" y="200" font-size="14" fill="#5C6470" text-anchor="middle">2a&sup2; + 2b&sup2;</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">25 / 30 &mdash; Adding two binomial squares</div>
+        <h1 class="title">(a+b)&sup2;+(a&minus;b)&sup2; = 2a&sup2;+2b&sup2;</h1>
+        <div class="formula-box">
+          $$(a+b)^2+(a-b)^2=2\left(a^2+b^2\right)$$
+        </div>
+        <p class="desc">No new construction needed &mdash; just add the two expansions from several slides back. Each has an $a^2$ and a $b^2$; the only difference is the sign on the cross term, and those signs are exact opposites.</p>
+        <ol class="steps">
+          <li><strong>Recall both expansions.</strong> $(a+b)^2=a^2+2ab+b^2$ and $(a-b)^2=a^2-2ab+b^2$.</li>
+          <li><strong>Add them.</strong> The $+2ab$ from one exactly cancels the $-2ab$ from the other.</li>
+          <li><strong>What's left.</strong> Two copies of $a^2$ and two copies of $b^2$: $2a^2+2b^2$.</li>
+        </ol>
+        <p class="note">This is the "parallelogram law" in disguise &mdash; the same identity that says a parallelogram's two diagonals satisfy $d_1^2+d_2^2=2(\text{side}_1^2+\text{side}_2^2)$.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>a&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>b&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>&plusmn;2ab (cancels)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 26 : HM <= GM, via HM*AM = GM^2 -->
+    <section class="slide" data-i="25">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(25)">&#8635; replay</button>
+        <svg viewBox="0 0 480 400">
+          <!-- rectangle 1: x by y -->
+          <g class="fx-grow" style="animation-delay:.3s">
+            <rect x="70" y="60" width="60" height="240" fill="#4A63E7" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:.7s">
+            <text x="100" y="185" font-size="16" fill="#FAF9F5" text-anchor="middle" transform="rotate(90 100 185)">area = xy = 4</text>
+            <text x="100" y="315" font-size="13" fill="#5C6470" text-anchor="middle">x=1</text>
+            <text x="45" y="185" font-size="13" fill="#5C6470" text-anchor="middle">y=4</text>
+          </g>
+
+          <text x="200" y="190" font-size="24" fill="#20242B" text-anchor="middle" font-family="Fraunces, serif" class="fx-fade" style="animation-delay:1.1s">=</text>
+
+          <!-- rectangle 2: HM by AM, same area -->
+          <g class="fx-grow" style="animation-delay:1.5s">
+            <rect x="260" y="110" width="96" height="150" fill="#E8A33D" fill-opacity="0.85" stroke="#20242B" stroke-width="2.5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.9s">
+            <text x="308" y="192" font-size="15" fill="#20242B" text-anchor="middle">area = HM&middot;AM = 4</text>
+            <text x="308" y="278" font-size="13" fill="#5C6470" text-anchor="middle">HM=1.6</text>
+            <text x="235" y="192" font-size="13" fill="#5C6470" text-anchor="middle" transform="rotate(90 235 192)">AM=2.5</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.4s">
+            <text x="240" y="360" font-size="15" fill="#20242B" text-anchor="middle">GM = &radic;4 = 2, and HM = 1.6 &le; 2 &le; 2.5 = AM</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">26 / 30 &mdash; Harmonic mean &le; geometric mean</div>
+        <h1 class="title">HM &le; GM, from a same-area rectangle swap</h1>
+        <div class="formula-box">
+          $$\text{HM}=\frac{2xy}{x+y}\;\le\;\sqrt{xy}=\text{GM}$$
+        </div>
+        <p class="desc">Take the original $x\times y$ rectangle (area $xy$). It turns out there's a <em>different-shaped</em> rectangle with sides HM and AM that has exactly the same area &mdash; that's not a coincidence, it's algebra, and it's the key to the whole proof.</p>
+        <ol class="steps">
+          <li><strong>Multiply HM and AM.</strong> $\text{HM}\cdot\text{AM}=\dfrac{2xy}{x+y}\cdot\dfrac{x+y}{2}=xy=\text{GM}^2$.</li>
+          <li><strong>Recall AM &ge; GM</strong> (a few slides back, the pinwheel proof) &mdash; so $\text{AM}\ge\text{GM}>0$.</li>
+          <li><strong>Solve for HM.</strong> $\text{HM}=\dfrac{\text{GM}^2}{\text{AM}}$. Since AM is at least GM, dividing by it can only shrink $\text{GM}^2$: $\text{HM}=\dfrac{\text{GM}^2}{\text{AM}}\le\dfrac{\text{GM}^2}{\text{GM}}=\text{GM}$.</li>
+          <li><strong>Check it.</strong> $x=1,y=4$: $\text{HM}=1.6$, $\text{GM}=2$, $\text{AM}=2.5$ &mdash; and indeed $1.6\le2\le2.5$.</li>
+        </ol>
+        <p class="note">Together with the pinwheel slide, this completes the classical chain $\text{HM}\le\text{GM}\le\text{AM}$, with equality everywhere exactly when $x=y$.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>x&times;y</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>HM&times;AM (same area)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 27 : Sum of squares, from two earlier slides -->
+    <section class="slide" data-i="26">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(26)">&#8635; replay</button>
+        <svg viewBox="0 0 480 420">
+          <g class="fx-draw" style="--len:520">
+            <rect x="100" y="80" width="160" height="200" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <rect class="fx-grow" style="animation-delay:.7s" x="100" y="80" width="160" height="160" fill="#4A63E7" fill-opacity="0.85"/>
+          <rect class="fx-grow" style="animation-delay:1.2s" x="100" y="240" width="160" height="40" fill="#D6604D" fill-opacity="0.7"/>
+
+          <g class="fx-fade" style="animation-delay:1.6s">
+            <text x="180" y="170" font-size="18" fill="#FAF9F5" text-anchor="middle">k &times; k = k&sup2;</text>
+            <text x="180" y="264" font-size="13" fill="#FAF9F5" text-anchor="middle">k &times; 1 = k</text>
+            <text x="180" y="60" font-size="14" fill="#5C6470" text-anchor="middle">k</text>
+            <text x="80" y="180" font-size="14" fill="#5C6470" text-anchor="middle">k+1</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.1s">
+            <text x="340" y="150" font-size="15" fill="#20242B" text-anchor="middle">k&times;(k+1)</text>
+            <path d="M280,80 L280,280" stroke="#5C6470" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <text x="180" y="330" font-size="16" fill="#20242B" text-anchor="middle">k&sup2; = k(k+1) &minus; k</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.6s">
+            <text x="240" y="390" font-size="14" fill="#5C6470" text-anchor="middle">&Sigma;k&sup2; = &Sigma;k(k+1) &minus; &Sigma;k</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">27 / 30 &mdash; Sum of squares, for free</div>
+        <h1 class="title">1&sup2;+2&sup2;+&hellip;+n&sup2; = n(n+1)(2n+1)/6</h1>
+        <div class="formula-box">
+          $$1^2+2^2+\cdots+n^2=\frac{n(n+1)(2n+1)}{6}$$
+        </div>
+        <p class="desc">No new picture required &mdash; this one falls straight out of two proofs you already have. A $k\times(k+1)$ rectangle is just a $k\times k$ square with one extra $k\times1$ strip attached, so $k^2=k(k+1)-k$ for every $k$.</p>
+        <ol class="steps">
+          <li><strong>Sum the identity.</strong> $\displaystyle\sum_{k=1}^n k^2=\sum_{k=1}^n k(k+1)-\sum_{k=1}^n k$.</li>
+          <li><strong>Plug in both known results.</strong> $\displaystyle\sum k(k+1)=\frac{n(n+1)(n+2)}{3}$ (the triple-staircase slide) and $\displaystyle\sum k=\frac{n(n+1)}{2}$ (the doubling-staircase slide).</li>
+          <li><strong>Combine over a common denominator.</strong> $\dfrac{n(n+1)(n+2)}{3}-\dfrac{n(n+1)}{2}=n(n+1)\left[\dfrac{2(n+2)-3}{6}\right]=\dfrac{n(n+1)(2n+1)}{6}$.</li>
+          <li><strong>Check it, n=4.</strong> $1+4+9+16=30$, and $\dfrac{4\cdot5\cdot9}{6}=30$. &#10003;</li>
+        </ol>
+        <p class="note">Nearly every identity in this deck is either a direct rectangle picture, or &mdash; like this one &mdash; a quick combination of two rectangle pictures you'd already trust on their own. A few more of those direct pictures follow.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>k&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>k (the extra strip)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 28 : Area of a triangle = r * s (inradius x semiperimeter) -->
+    <section class="slide" data-i="27">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(27)">&#8635; replay</button>
+        <svg viewBox="0 0 480 400">
+          <!-- main triangle with incenter -->
+          <polygon class="fx-fade" style="animation-delay:.2s" points="90,60 300,45 210,190" fill="none" stroke="#20242B" stroke-width="2.5"/>
+          <g class="fx-fade" style="animation-delay:.6s">
+            <circle cx="195" cy="100" r="4" fill="#20242B"/>
+            <text x="195" y="90" font-size="11" fill="#5C6470" text-anchor="middle">I</text>
+          </g>
+          <g class="fx-draw" style="--len:400; animation-delay:1.0s">
+            <line x1="195" y1="100" x2="90" y2="60" stroke="#5C6470" stroke-width="1.5"/>
+            <line x1="195" y1="100" x2="300" y2="45" stroke="#5C6470" stroke-width="1.5"/>
+            <line x1="195" y1="100" x2="210" y2="190" stroke="#5C6470" stroke-width="1.5"/>
+          </g>
+          <polygon class="fx-grow" style="animation-delay:1.4s" points="90,60 300,45 195,100" fill="#4A63E7" fill-opacity="0.6"/>
+          <polygon class="fx-grow" style="animation-delay:1.55s" points="300,45 210,190 195,100" fill="#E8A33D" fill-opacity="0.6"/>
+          <polygon class="fx-grow" style="animation-delay:1.7s" points="210,190 90,60 195,100" fill="#5FA88F" fill-opacity="0.6"/>
+          <g class="fx-fade" style="animation-delay:2.0s">
+            <text x="195" y="55" font-size="13" fill="#20242B" text-anchor="middle">c</text>
+            <text x="255" y="130" font-size="13" fill="#20242B" text-anchor="middle">a</text>
+            <text x="140" y="140" font-size="13" fill="#20242B" text-anchor="middle">b</text>
+          </g>
+
+          <!-- unrolled: rectangle of width a+b+c, height r, each column split in half -->
+          <g class="fx-draw" style="--len:900; animation-delay:2.4s">
+            <rect x="80" y="250" width="320" height="90" fill="none" stroke="#20242B" stroke-width="2.5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.6s">
+            <line x1="190" y1="250" x2="190" y2="340" stroke="#5C6470" stroke-width="1.5"/>
+            <line x1="290" y1="250" x2="290" y2="340" stroke="#5C6470" stroke-width="1.5"/>
+          </g>
+          <polygon class="fx-grow" style="animation-delay:2.9s" points="80,340 190,340 190,250" fill="#4A63E7" fill-opacity="0.75"/>
+          <polygon class="fx-grow" style="animation-delay:3.0s" points="190,340 290,340 290,250" fill="#E8A33D" fill-opacity="0.75"/>
+          <polygon class="fx-grow" style="animation-delay:3.1s" points="290,340 400,340 400,250" fill="#5FA88F" fill-opacity="0.75"/>
+          <g class="fx-fade" style="animation-delay:3.4s">
+            <text x="135" y="365" font-size="12" fill="#5C6470" text-anchor="middle">c</text>
+            <text x="240" y="365" font-size="12" fill="#5C6470" text-anchor="middle">a</text>
+            <text x="345" y="365" font-size="12" fill="#5C6470" text-anchor="middle">b</text>
+            <text x="60" y="300" font-size="13" fill="#5C6470" text-anchor="middle">r</text>
+            <text x="240" y="295" font-size="14" fill="#20242B" text-anchor="middle">width = a+b+c</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">28 / 30 &mdash; Area of a triangle, from its incircle</div>
+        <h1 class="title">Area = r &middot; s, the inradius times the semiperimeter</h1>
+        <div class="formula-box">
+          $$\text{Area} = r\cdot s, \qquad s=\frac{a+b+c}{2}$$
+        </div>
+        <p class="desc">Join the incenter $I$ to all three vertices. That splits the triangle into three smaller triangles, one per side, and every one of them has the <em>same</em> height &mdash; the inradius $r$ &mdash; because $r$ is by definition the perpendicular distance from $I$ to every side.</p>
+        <ol class="steps">
+          <li><strong>Each piece is a half-rectangle.</strong> The piece on side $a$ has area $\tfrac12 a r$ (base $\times$ height, halved &mdash; the very first triangle slide). Likewise $\tfrac12 br$ and $\tfrac12 cr$ for the other two.</li>
+          <li><strong>Lay the three bases end to end.</strong> A rectangle of width $(a+b+c)$ and height $r$, split into three columns, has each column's diagonal cutting off exactly one of these three half-pieces.</li>
+          <li><strong>Add them up.</strong> $\text{Area}=\tfrac12ar+\tfrac12br+\tfrac12cr=\tfrac12r(a+b+c)=r\cdot s$.</li>
+        </ol>
+        <p class="note">Equivalently: $2\times\text{Area} = r\times\text{perimeter}$ &mdash; the whole $(a+b+c)\times r$ rectangle is exactly twice the triangle, one column per side.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>side c, area &frac12;cr</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>side a, area &frac12;ar</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>side b, area &frac12;br</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 29 : Visual Euclidean Algorithm -->
+    <section class="slide" data-i="28">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(28)">&#8635; replay</button>
+        <svg viewBox="0 0 480 430">
+          <!-- row 1: 105 x 24 -->
+          <g class="fx-fade" style="animation-delay:.2s">
+            <rect class="fx-grow" style="animation-delay:.3s"  x="80"  y="60" width="60" height="60" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect class="fx-grow" style="animation-delay:.4s"  x="140" y="60" width="60" height="60" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect class="fx-grow" style="animation-delay:.5s"  x="200" y="60" width="60" height="60" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect class="fx-grow" style="animation-delay:.6s"  x="260" y="60" width="60" height="60" fill="#4A63E7" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect x="320" y="60" width="22.5" height="60" fill="none" stroke="#D6604D" stroke-width="2" stroke-dasharray="4 3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:.9s">
+            <text x="240" y="45" font-size="13" fill="#20242B" text-anchor="middle">105 &times; 24 &nbsp;&rarr;&nbsp; 105 = 4&middot;24 + 9</text>
+          </g>
+
+          <!-- row 2: 24 x 9 -->
+          <g class="fx-fade" style="animation-delay:1.3s">
+            <rect class="fx-grow" style="animation-delay:1.4s" x="80"  y="150" width="60" height="60" fill="#E8A33D" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect class="fx-grow" style="animation-delay:1.5s" x="140" y="150" width="60" height="60" fill="#E8A33D" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect x="200" y="150" width="40" height="60" fill="none" stroke="#D6604D" stroke-width="2" stroke-dasharray="4 3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:1.7s">
+            <text x="160" y="135" font-size="13" fill="#20242B" text-anchor="middle">24 &times; 9 &nbsp;&rarr;&nbsp; 24 = 2&middot;9 + 6</text>
+          </g>
+
+          <!-- row 3: 9 x 6 -->
+          <g class="fx-fade" style="animation-delay:2.1s">
+            <rect class="fx-grow" style="animation-delay:2.2s" x="80" y="240" width="60" height="60" fill="#5FA88F" fill-opacity="0.8" stroke="#20242B" stroke-width="1.5"/>
+            <rect x="140" y="240" width="30" height="60" fill="none" stroke="#D6604D" stroke-width="2" stroke-dasharray="4 3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:2.4s">
+            <text x="105" y="225" font-size="13" fill="#20242B" text-anchor="middle">9 &times; 6 &nbsp;&rarr;&nbsp; 9 = 1&middot;6 + 3</text>
+          </g>
+
+          <!-- row 4: 6 x 3, exact -->
+          <g class="fx-fade" style="animation-delay:2.8s">
+            <rect class="fx-grow" style="animation-delay:2.9s" x="80"  y="330" width="60" height="60" fill="#D6604D" fill-opacity="0.85" stroke="#20242B" stroke-width="1.5"/>
+            <rect class="fx-grow" style="animation-delay:3.0s" x="140" y="330" width="60" height="60" fill="#D6604D" fill-opacity="0.85" stroke="#20242B" stroke-width="1.5"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:3.3s">
+            <text x="110" y="315" font-size="13" fill="#20242B" text-anchor="middle">6 &times; 3 &nbsp;&rarr;&nbsp; 6 = 2&middot;3 + 0</text>
+            <text x="240" y="365" font-size="17" fill="#20242B" text-anchor="middle">no remainder &mdash; gcd(105,24) = 3</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">29 / 30 &mdash; The Euclidean algorithm, geometrically</div>
+        <h1 class="title">gcd(a,b), by repeatedly removing squares</h1>
+        <div class="formula-box">
+          $$\gcd(105,24)=3$$
+        </div>
+        <p class="desc">Take a rectangle $a\times b$. Cut off as many $b\times b$ squares as fit along the long side. What's left is a smaller rectangle $b\times r$, where $r$ is exactly the remainder $a\bmod b$. Repeat on the new, smaller rectangle. Shown here for $a=105,\,b=24$.</p>
+        <ol class="steps">
+          <li><strong>Every common divisor of $a,b$ survives each step.</strong> $\gcd(a,b)=\gcd(b,\,a\bmod b)$, because any square that tiles both a length-$a$ and a length-$b$ segment also tiles their difference.</li>
+          <li><strong>The rectangle strictly shrinks.</strong> $105\times24 \to 24\times9 \to 9\times6 \to 6\times3$.</li>
+          <li><strong>Stop when squares exactly tile the rectangle</strong> &mdash; no rectangle left over. That side length, 3, is the gcd: the largest square that could have tiled the <em>original</em> $105\times24$ rectangle all along.</li>
+        </ol>
+        <p class="note">This is the Euclidean algorithm with every division replaced by "how many squares fit" &mdash; the same repeated-subtraction idea, just watched as areas instead of computed as remainders.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#4A63E7"></span>step 1: four 24&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#E8A33D"></span>step 2: two 9&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#5FA88F"></span>step 3: one 6&sup2;</span>
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>step 4: two 3&sup2;, exact</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 30 : A square within a square, area exactly 1/5 -->
+    <section class="slide" data-i="29">
+      <div class="diagram-panel">
+        <button class="replay-btn" onclick="replaySlide(29)">&#8635; replay</button>
+        <svg viewBox="0 0 480 420">
+          <g class="fx-draw" style="--len:1200">
+            <rect x="100" y="60" width="300" height="300" fill="none" stroke="#20242B" stroke-width="3"/>
+          </g>
+          <g class="fx-fade" style="animation-delay:.4s">
+            <circle cx="100" cy="360" r="4" fill="#20242B"/><text x="88" y="378" font-size="12" fill="#5C6470">A</text>
+            <circle cx="400" cy="360" r="4" fill="#20242B"/><text x="408" y="378" font-size="12" fill="#5C6470">B</text>
+            <circle cx="400" cy="60"  r="4" fill="#20242B"/><text x="408" y="55" font-size="12" fill="#5C6470">C</text>
+            <circle cx="100" cy="60"  r="4" fill="#20242B"/><text x="82" y="55" font-size="12" fill="#5C6470">D</text>
+          </g>
+
+          <!-- 4 pinwheel lines: A-midBC, B-midCD, C-midDA, D-midAB -->
+          <g class="fx-draw" style="--len:340; animation-delay:.9s">
+            <line x1="100" y1="360" x2="400" y2="210" stroke="#4A63E7" stroke-width="2.5"/>
+          </g>
+          <g class="fx-draw" style="--len:340; animation-delay:1.1s">
+            <line x1="400" y1="360" x2="250" y2="60"  stroke="#E8A33D" stroke-width="2.5"/>
+          </g>
+          <g class="fx-draw" style="--len:340; animation-delay:1.3s">
+            <line x1="400" y1="60"  x2="100" y2="210" stroke="#5FA88F" stroke-width="2.5"/>
+          </g>
+          <g class="fx-draw" style="--len:340; animation-delay:1.5s">
+            <line x1="100" y1="60"  x2="250" y2="360" stroke="#D6604D" stroke-width="2.5"/>
+          </g>
+
+          <!-- central tilted square, computed intersection points -->
+          <polygon class="fx-grow" style="animation-delay:2.0s" points="340,180 280,60 160,120 220,300" fill="#D6604D" fill-opacity="0.35" stroke="#20242B" stroke-width="2.5"/>
+          <g class="fx-fade" style="animation-delay:2.4s">
+            <text x="250" y="195" font-size="16" fill="#20242B" text-anchor="middle">1/5</text>
+          </g>
+
+          <g class="fx-fade" style="animation-delay:2.8s">
+            <text x="250" y="30" font-size="13" fill="#5C6470" text-anchor="middle">each line joins a vertex to the midpoint of the next side</text>
+          </g>
+        </svg>
+      </div>
+      <div class="text-panel">
+        <div class="eyebrow">30 / 30 &mdash; A tilted square, hiding inside a square</div>
+        <h1 class="title">The inner square is exactly &frac15; the outer one</h1>
+        <div class="formula-box">
+          $$\text{inner area} = \frac15 \cdot \text{outer area}$$
+        </div>
+        <p class="desc">Take a unit square $ABCD$. Join each vertex to the midpoint of the <em>next</em> side, going around: $A$ to the midpoint of $BC$, $B$ to the midpoint of $CD$, and so on. These four lines pinwheel around and box in a small tilted square in the middle.</p>
+        <ol class="steps">
+          <li><strong>Set up coordinates.</strong> $A(0,0)$, $B(1,0)$, $C(1,1)$, $D(0,1)$. The line $A\to(1,\tfrac12)$ has slope $\tfrac12$; the line $D\to(\tfrac12,0)$ has slope $-2$.</li>
+          <li><strong>It's a square, not just a rhombus.</strong> $\tfrac12\times(-2)=-1$, so consecutive pinwheel lines are perpendicular &mdash; every corner of the inner shape is a right angle, exactly like the tilted square in the Pythagorean slide.</li>
+          <li><strong>Solve for one corner.</strong> Intersecting $y=\tfrac12x$ with the line through $B(1,0)$ and $(\tfrac12,1)$ gives the point $\left(\tfrac45,\tfrac25\right)$.</li>
+          <li><strong>Read off the side length.</strong> By the four-fold symmetry, the inner square's side is $\sqrt{(\tfrac15)^2+(\tfrac25)^2}=\tfrac{1}{\sqrt5}$, so its area is $\tfrac15$ &mdash; regardless of the outer square's size.</li>
+        </ol>
+        <p class="note">A specific, checkable instance of a general fact: this pinwheel-and-perpendicularity trick (right angles from two slopes multiplying to $-1$) is the same mechanism that made the tilted square genuinely square-shaped a few slides back.</p>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:#D6604D"></span>inner square, area 1/5</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bottom">
+    <div class="dots" id="dots"></div>
+    <span class="hint">press &rarr; or space</span>
+    <div style="display:flex; gap:10px;">
+      <button id="autoplayBtn" onclick="toggleAutoplay()">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        <span id="autoplayLabel">Autoplay</span>
+      </button>
+      <button id="nextBtn" onclick="goNext()">
+        <span id="nextLabel">Next</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const dotsWrap = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsWrap.appendChild(d);
+  });
+
+  function updateChrome(){
+    document.getElementById('counterLabel').textContent =
+      String(current+1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+
+    Array.from(dotsWrap.children).forEach((d, i) => {
+      d.classList.toggle('current', i === current);
+      d.classList.toggle('done', i < current);
+    });
+
+    const label = document.getElementById('nextLabel');
+    label.textContent = (current === total - 1) ? 'Start over' : 'Next';
+  }
+
+  function showSlide(i){
+    slides.forEach((s, idx) => {
+      s.classList.toggle('active', idx === i);
+    });
+    updateChrome();
+  }
+
+  function goNext(){
+    if (current === total - 1){
+      current = 0;
+    } else {
+      current += 1;
+    }
+    showSlide(current);
+    if (autoplayOn) scheduleAutoplay();
+  }
+
+  function replaySlide(i){
+    const s = slides[i];
+    s.classList.remove('active');
+    // force reflow so the browser treats the re-add as a fresh element state
+    void s.offsetWidth;
+    s.classList.add('active');
+    if (autoplayOn && i === current) scheduleAutoplay();
+  }
+
+  // ---- autoplay: watch the deck advance itself, pacing each slide by how long it takes to reveal ----
+  let autoplayOn = false;
+  let autoplayTimer = null;
+  const AUTOPLAY_HOLD_MS = 3200; // pause on a fully-revealed slide before moving on
+
+  function slideRevealMs(i){
+    const svg = slides[i].querySelector('.diagram-panel svg');
+    if (!svg) return 3000;
+    let maxDelay = 0;
+    svg.querySelectorAll('[style]').forEach(el => {
+      const m = /animation-delay:\s*([\d.]+)s/.exec(el.getAttribute('style') || '');
+      if (m) maxDelay = Math.max(maxDelay, parseFloat(m[1]));
+    });
+    return Math.round((maxDelay + 1.2) * 1000);
+  }
+
+  function scheduleAutoplay(){
+    clearTimeout(autoplayTimer);
+    autoplayTimer = setTimeout(() => {
+      if (!autoplayOn) return;
+      if (current === total - 1){
+        stopAutoplay();
+        return;
+      }
+      goNext();
+    }, slideRevealMs(current) + AUTOPLAY_HOLD_MS);
+  }
+
+  function stopAutoplay(){
+    autoplayOn = false;
+    clearTimeout(autoplayTimer);
+    document.getElementById('autoplayBtn').classList.remove('on');
+    document.getElementById('playIcon').style.display = '';
+    document.getElementById('pauseIcon').style.display = 'none';
+    document.getElementById('autoplayLabel').textContent = 'Autoplay';
+  }
+
+  function toggleAutoplay(){
+    if (autoplayOn){
+      stopAutoplay();
+      return;
+    }
+    autoplayOn = true;
+    document.getElementById('autoplayBtn').classList.add('on');
+    document.getElementById('playIcon').style.display = 'none';
+    document.getElementById('pauseIcon').style.display = '';
+    document.getElementById('autoplayLabel').textContent = 'Pause';
+    scheduleAutoplay();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter'){
+      e.preventDefault();
+      goNext();
+    }
+  });
+
+  updateChrome();
+</script>
+
+</body>
+</html>
